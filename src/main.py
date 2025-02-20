@@ -11,10 +11,12 @@ from __future__ import annotations
 import logging
 
 from apify import Actor
+from apify_client import ApifyClient
 from crewai import Crew, Process, Task
 
 from src.agents import create_actor_quality_agent, create_code_quality_agent, create_actor_inspector_agent
 from src.ppe_utils import charge_for_actor_start
+from src.utils import get_actor_latest_build, get_apify_token
 
 fallback_input = {
     'query': 'This is a fallback test query, do nothing and ignore it.',
@@ -39,14 +41,16 @@ async def main() -> None:
         actor_input = {**fallback_input, **actor_input}
 
         actor_id = actor_input.get('actorId')
-        github_repo_url = actor_input.get('githubRepoUrl')
         model_name = actor_input.get('modelName', 'gpt-4o-mini')
         if debug := actor_input.get('debug', False):
             Actor.log.setLevel(logging.DEBUG)
         if not actor_id:
             raise ValueError('Missing the "actorId" attribute in the input!')
-        if not github_repo_url:
-            raise ValueError('Missing the "githubRepoUrl" attribute in the input!')
+
+        apify_client = ApifyClient(token=get_apify_token())
+        build = get_actor_latest_build(apify_client, actor_id)
+        if not (github_repo_url := build.get('actVersion', {}).get('gitRepoUrl')):
+            raise ValueError(f'Failed to get the GitHub repository URL for the Actor {actor_id}!')
 
         await charge_for_actor_start()
 

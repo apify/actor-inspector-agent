@@ -19,12 +19,12 @@ def create_code_quality_agent(llm: str, debug: bool = False) -> Agent:
         goal=(
             'Inspect the code quality of a GitHub repository and provide a '
             'report for these criteria: '
-            '- Contains tests? '
-            '- Is linter enabled? '
-            '- Are there any code smells? '
-            '- Are there any security vulnerabilities? '
-            '- Are there any performance issues visible in the code? '
-            '- Are there any code style issues?'
+            '- Contains tests? \n'
+            '- Is linter enabled? \n'
+            '- Are there any code smells? \n'
+            '- Are there any security vulnerabilities? \n'
+            '- Are there any performance issues visible in the code? \n'
+            '- Are there any code style issues?\n'
         ),
         backstory=(
             'I am an expert code quality inspector who can help you inspect the code quality '
@@ -65,9 +65,11 @@ def create_actor_quality_agent(llm: str, debug: bool = False) -> Agent:
         role='Expert Apify Actor quality inspector',
         goal=(
             'Inspect the quality of an Apify Actor and provide a report for these criteria: '
-            '- Is the README well-defined? '
-            '- Are the input properties well-defined and do they make sense? '
-            '- Is the actor easy to follow and use for a real user from the README?'
+            '- Is the README well-defined? \n'
+            '- Are the input properties well-defined and do they make sense? \n'
+            '- Is the actor easy to follow and use for a real user from the README? \n'
+            '- Are use examples provided? \n'
+            '- Is open source (github) repository provided link in the README? \n'
         ),
         backstory=(
             'I am an expert in inspecting the quality of Apify Actors. '
