@@ -4,22 +4,22 @@
     "overview": {
       "title": "Overview",
       "transformation": {
-        "fields": ["query", "response", "structured_response"]
+        "fields": ["actorId", "readme", "inputSchema"]
       },
       "display": {
         "component": "table",
         "properties": {
-          "query": {
-            "label": "Query",
+          "actorId": {
+            "label": "actorId",
             "format": "text"
           },
-          "response": {
-            "label": "Response",
+          "readme": {
+            "label": "Readme",
             "format": "text"
           },
-          "structured_response": {
-            "label": "Structured Response",
-            "format": "object"
+          "inputSchema": {
+            "label": "Input Schema",
+            "format": "text"
           }
         }
       }
