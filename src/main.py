@@ -11,11 +11,10 @@ from __future__ import annotations
 import logging
 
 from apify import Actor
-from crewai import Agent, Crew, Task
+from crewai import Crew, Process, Task
 
-from src.models import AgentStructuredOutput
-from src.ppe_utils import charge_for_actor_start, charge_for_model_tokens
-from src.tools import tool_calculator_sum, tool_scrape_instagram_profile_posts
+from src.agents import create_actor_quality_agent, create_code_quality_agent, create_actor_inspector_agent
+from src.ppe_utils import charge_for_actor_start
 
 fallback_input = {
     'query': 'This is a fallback test query, do nothing and ignore it.',
@@ -39,46 +38,48 @@ async def main() -> None:
         # fallback input is provided only for testing, you need to delete this line
         actor_input = {**fallback_input, **actor_input}
 
-        query = actor_input.get('query')
+        actor_id = actor_input.get('actorId')
+        github_repo_url = actor_input.get('githubRepoUrl')
         model_name = actor_input.get('modelName', 'gpt-4o-mini')
         if debug := actor_input.get('debug', False):
             Actor.log.setLevel(logging.DEBUG)
-        if not query:
-            msg = 'Missing "query" attribute in input!'
-            raise ValueError(msg)
+        if not actor_id:
+            raise ValueError('Missing the "actorId" attribute in the input!')
+        if not github_repo_url:
+            raise ValueError('Missing the "githubRepoUrl" attribute in the input!')
 
         await charge_for_actor_start()
 
-        # Create a toolkit for the agent
-        tools = [tool_calculator_sum, tool_scrape_instagram_profile_posts]
-
-        # Create an agent
-        # For more information, see https://docs.crewai.com/concepts/agents
-        agent = Agent(
-            role='Helpful agent',
-            goal='Assist users with various tasks.',
-            backstory='I am a helpful agent that can assist you with various tasks.',
-            tools=tools,
-            verbose=debug,
-        )
-
-        # Create a task assigned to the agent
-        # For more information, see https://docs.crewai.com/concepts/tasks
-        task = Task(
-            description=query,
-            expected_output='A helpful response to the user query.',
-            agent=agent,
-            output_pydantic=AgentStructuredOutput,
-        )
+        inspector_agent = create_actor_inspector_agent(model_name)
+        code_quality_agent = create_code_quality_agent(model_name, debug=debug)
+        actor_quality_agent = create_actor_quality_agent(model_name, debug=debug)
 
         # Create a one-man crew
         # For more information, see https://docs.crewai.com/concepts/crews
-        crew = Crew(agents=[agent], tasks=[task])
+        crew = Crew(
+            agents=[
+                code_quality_agent,
+                actor_quality_agent,
+            ],
+            tasks=[
+                Task(
+                    description=(
+                        f'analyze me quality of this Apif Actor {actor_id} and also the quality of the Actor code the code of the Actor is here {github_repo_url}'
+                    ),
+                    expected_output='A helpful response to the user query.',
+                    #output_pydantic=
+                )
+            ],
+            manager_agent=inspector_agent,
+            process=Process.hierarchical,
+        )
 
         # Kick off the crew and get the response
         crew_output = crew.kickoff()
         raw_response = crew_output.raw
-        response = crew_output.pydantic
+        Actor.log.debug(raw_response)
+        """
+        #response = crew_output.pydantic
 
         # Charge the user for the tokens used by the model
         total_tokens = crew_output.token_usage.total_tokens
@@ -101,3 +102,4 @@ async def main() -> None:
             }
         )
         Actor.log.info('Pushed the data into the dataset!')
+        """

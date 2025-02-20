@@ -12,6 +12,41 @@ from typing import Any, Dict
 from pydantic import BaseModel, RootModel
 
 
+
+class CodeQualityOutput(BaseModel):
+    contains_tests: bool
+    is_linter_enabled: bool
+    code_smells: bool
+    security_vulnerabilities: bool
+    performance_issues: bool
+    code_style_issues: bool
+
+class GithubRepoFile(BaseModel):
+    """
+    GithubRepoFile Pydantic model.
+
+    Attributes:
+        name: The name of the file.
+        content: The content of the file.
+    """
+
+    name: str
+    content: str
+
+
+class GithubRepoContext(BaseModel):
+    """
+    GithubRepoContext Pydantic model.
+
+    Attributes:
+        tree: A dictionary representing the file tree of the repository.
+        files: A list of GithubRepoFile objects representing the files in the repository.
+    """
+
+    tree: dict
+    files: list[GithubRepoFile]
+
+
 class ActorInputProperty(BaseModel):
     """Actor input property Pydantic model.
 
@@ -25,6 +60,7 @@ class ActorInputProperty(BaseModel):
     description: str
     type: str
     default: Any | None
+
 
 class ActorInputDefinition(BaseModel):
     """Actor input definition Pydantic model.
