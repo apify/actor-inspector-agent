@@ -12,6 +12,14 @@ from typing import Any
 from pydantic import BaseModel
 
 
+class CodeQualityOutput(BaseModel):
+    contains_tests: bool
+    is_linter_enabled: bool
+    code_smells: bool
+    security_vulnerabilities: bool
+    performance_issues: bool
+    code_style_issues: bool
+
 class GithubRepoFile(BaseModel):
     """
     GithubRepoFile Pydantic model.

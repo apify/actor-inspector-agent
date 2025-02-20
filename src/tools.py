@@ -44,7 +44,7 @@ def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition:
     """Tool to get the input schema of an Apify Actor.
 
     Args:
-        actor_id (str): The ID of the Apify Actor.
+        actor_id (str): The ID or name of the Apify Actor.
 
     Returns:
         ActorInputDefinition: The input schema of the specified Actor.
@@ -55,8 +55,12 @@ def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition:
     apify_client = ApifyClient(token=get_apify_token())
     build = get_actor_latest_build(apify_client, actor_id)
 
-    if not (actor_input := build.get('actorDefinition', {}).get('input')):
-        raise ValueError(f'Input schema not found in the Actor build for Actor: {actor_id}')
+
+    if not (actor_definition := build.get('actorDefinition')):
+        raise ValueError(f'Actor definition not found in the Actor build for Actor: {actor_id}')
+
+    if not (actor_input := actor_definition.get('input')):
+            raise ValueError(f'Input schema not found in the Actor build for Actor: {actor_id}')
 
     properties: dict[str, ActorInputProperty] = {}
     for name, prop in actor_input.get('properties', {}).items():
@@ -66,8 +70,8 @@ def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition:
         properties[name] = ActorInputProperty(**prop)
 
     return ActorInputDefinition(
-        title=actor_input.get('title'),
-        description=actor_input.get('description'),
+        title=actor_definition.get('title'),
+        description=actor_definition.get('description'),
         properties=properties,
     )
 

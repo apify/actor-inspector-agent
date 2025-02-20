@@ -3,12 +3,19 @@
   "type": "object",
   "schemaVersion": 1,
   "properties": {
-    "query": {
+    "actorId": {
       "title": "actorId",
       "type": "string",
       "description": "Actor ID to inspect",
       "editor": "textfield",
-      "prefill": "apify/rag-web-browser"
+      "prefill": "jakub.kopecky/finance-monitoring-agent"
+    },
+    "githubRepoUrl": {
+      "title": "githubRepoUrl",
+      "type": "string",
+      "description": "Github repo URL to inspect",
+      "editor": "textfield",
+      "prefill": "https://github.com/apify/actor-finance-monitoring-agent"
     },
     "modelName": {
       "title": "OpenAI model",
@@ -26,5 +33,5 @@
       "default": false
     }
   },
-  "required": ["query"]
+  "required": ["actorId", "githubRepoUrl"]
 }
