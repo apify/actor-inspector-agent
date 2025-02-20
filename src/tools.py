@@ -8,14 +8,37 @@ To learn how to create a new tool, see:
 
 from __future__ import annotations
 
+import logging
+
 import requests
 from apify_client import ApifyClient
-from crewai.tools import tool
+from crewai.tools import BaseTool, tool
+from pydantic import BaseModel, Field
 
 from src.const import REQUESTS_TIMEOUT_SECS
 from src.models import ActorInputDefinition, ActorInputProperty, GithubRepoContext, GithubRepoFile
 from src.utils import get_actor_latest_build, get_apify_token
 
+logger = logging.getLogger('apify')
+
+
+class GetActorReadmeInput(BaseModel):
+    """Input schema for GetActorReadme."""
+    actor_id: str = Field(..., description='The ID of the Apify Actor.')
+
+class GetActorReadmeTool(BaseTool):
+    name: str = 'get_actor_readme'
+    description: str = 'Fetch the README content of the specified Apify Actor.'
+    args_schema: type[BaseModel] = GetActorReadmeInput
+
+    def _run(self, actor_id: str) -> str:
+        logger.info('Getting README for actor %s', actor_id)
+        apify_client = ApifyClient(token=get_apify_token())
+        build = get_actor_latest_build(apify_client, actor_id)
+        readme = build.get('actorDefinition', {}).get('readme')
+        if not readme:
+            raise ValueError(f'Failed to get the README for the Actor {actor_id}')
+        return readme
 
 
 @tool
@@ -31,6 +54,7 @@ def tool_get_actor_readme(actor_id: str) -> str:
     Raises:
         ValueError: If the README for the Actor cannot be retrieved.
     """
+    logger.info('Getting README for actor %s', actor_id)
     apify_client = ApifyClient(token=get_apify_token())
     build = get_actor_latest_build(apify_client, actor_id)
 

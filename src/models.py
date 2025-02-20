@@ -7,10 +7,10 @@ Resources:
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
-from pydantic import BaseModel, RootModel
-
+from pydantic import BaseModel, ConfigDict, RootModel
+from pydantic.alias_generators import to_camel
 
 
 class CodeQualityOutput(BaseModel):
@@ -78,27 +78,42 @@ class ActorInputDefinition(BaseModel):
 
 class Stats(BaseModel):
     """Actor statistics total runs, users"""
-    totalRuns: int | None = None
-    totalUsers30Days: int | None = None
-    publicActorRunStats30Days: dict = None
+    total_runs: int | None = None
+    total_users30_days: int | None = None
+    public_actor_run_stats30_days: dict = None
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
 
 # Nested model for 'pricingInfos'
 class ActorChargeEvent(BaseModel):
-    eventDescription: str
-    eventPriceUsd: float
-    eventTitle: str
+    event_description: str
+    event_price_usd: float
+    event_title: str
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
 
 class PricingPerEvent(BaseModel):
-    actorChargeEvents: Dict[str, ActorChargeEvent]
+    actor_charge_events: dict[str, ActorChargeEvent]
 
 class PricingInfo(BaseModel):
     """Pricing information: Pay per usage, Pay per results, Pay per event."""
-    pricingModel: str
-    pricePerUnitUsd: float | None = None
-    trialMinutes: int | None = None
-    apifyMarginPercentage: float | None = None
-    minimalMaxTotalChargeUsd: float | None = None
-    pricingPerEvent: PricingPerEvent | None = None
+    pricing_model: str
+    price_per_unit_usd: float | None = None
+    trial_minutes: int | None = None
+    apify_margin_percentage: float | None = None
+    minimal_max_total_charge_usd: float | None = None
+    pricing_per_event: PricingPerEvent | None = None
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
 
 class ActorStore(BaseModel):
     """ Actor Store List Pydantic model."""
@@ -107,9 +122,14 @@ class ActorStore(BaseModel):
     title: str
     description: str | None = None
     stats: Stats | None = None
-    currentPricingInfo: PricingInfo | None = None
+    current_pricing_info: PricingInfo | None = None
     url: str | None = None
-    totalStars: int | None = None
+    total_stars: int | None = None
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
 
 class ActorStoreList(RootModel):
     """ Actor Store List Pydantic model."""

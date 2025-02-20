@@ -1,6 +1,6 @@
 from crewai import Agent
 
-from src.tools import tool_get_github_repo_context, tool_get_actor_input_schema, tool_get_actor_readme
+from src.tools import GetActorReadmeTool, tool_get_actor_input_schema, tool_get_github_repo_context
 
 
 def create_code_quality_agent(llm: str, debug: bool = False) -> Agent:
@@ -33,17 +33,17 @@ def create_code_quality_agent(llm: str, debug: bool = False) -> Agent:
             'such as the repo file tree and file '
             'contents. I can help by delivering insights on the code quality of the repository.'
             '\n Code quality guidelines:'
-            "Maintain high code quality to ensure readability, reliability, and scalability. Focus on these key principles:\n\n"
-            "1. **Clarity**: Write self-explanatory code with meaningful variable names and comments where needed.\n"
-            "2. **Consistency**: Follow a style guide (e.g., PEP 8 for Python) for formatting and structure.\n"
-            "3. **Modularity**: Break code into reusable functions or classes to avoid repetition.\n"
-            "4. **Testing**: Include unit tests to catch bugs and validate functionality.\n"
-            "5. **Performance**: Optimize for efficiency without sacrificing readability.\n\n"
-            "Tips:\n"
-            "- Keep functions short and focused (single responsibility).\n"
-            "- Use version control (e.g., Git) with clear commit messages.\n"
-            "- Lint your code regularly to catch errors early.\n"
-            "Good code is easy to understand, maintain, and extend—aim for simplicity and robustness."
+            'Maintain high code quality to ensure readability, reliability, and scalability. Focus on these key principles:\n\n'
+            '1. **Clarity**: Write self-explanatory code with meaningful variable names and comments where needed.\n'
+            '2. **Consistency**: Follow a style guide (e.g., PEP 8 for Python) for formatting and structure.\n'
+            '3. **Modularity**: Break code into reusable functions or classes to avoid repetition.\n'
+            '4. **Testing**: Include unit tests to catch bugs and validate functionality.\n'
+            '5. **Performance**: Optimize for efficiency without sacrificing readability.\n\n'
+            'Tips:\n'
+            '- Keep functions short and focused (single responsibility).\n'
+            '- Use version control (e.g., Git) with clear commit messages.\n'
+            '- Lint your code regularly to catch errors early.\n'
+            'Good code is easy to understand, maintain, and extend—aim for simplicity and robustness.'
         ),
         tools=tools,
         verbose=debug,
@@ -60,7 +60,7 @@ def create_actor_quality_agent(llm: str, debug: bool = False) -> Agent:
     Returns:
         Agent: An instance of the Agent class configured for Apify Actor quality inspection.
     """
-    tools = [tool_get_actor_input_schema, tool_get_actor_readme]
+    tools = [tool_get_actor_input_schema, GetActorReadmeTool()]
     return Agent(
         role='Expert Apify Actor quality inspector',
         goal=(
@@ -76,7 +76,7 @@ def create_actor_quality_agent(llm: str, debug: bool = False) -> Agent:
             'for a real user to follow and use the actor for the first time. '
             'Additionally, I will analyze the input properties descriptions to ensure they are well-defined and make sense.'
             '\n Actor README guidelines:'
-            'In Apify, a readme is more than a developer guide—it\'s the public Actor detail page in the Store, serving as a landing page for users. It has four main functions: **SEO** (use keywords for Google visibility), **first impression** (convince users to try your Actor), **extended instructions** (explain complex inputs), and **support** (offer troubleshooting and help links).\n'
+            "In Apify, a readme is more than a developer guide—it's the public Actor detail page in the Store, serving as a landing page for users. It has four main functions: **SEO** (use keywords for Google visibility), **first impression** (convince users to try your Actor), **extended instructions** (explain complex inputs), and **support** (offer troubleshooting and help links).\n"
             '\n'
             '### Key Elements:\n'
             '1. **Intro & Features**: Briefly explain what the Actor does, its benefits, and data it extracts (e.g., with a table). Highlight platform perks like scheduling or proxies.\n'

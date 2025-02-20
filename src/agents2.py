@@ -1,6 +1,6 @@
 from crewai import Agent
 
-from src.tools import tool_get_actor_readme
+from src.tools import GetActorReadmeTool
 from src.tools_2 import SearchRelatedActorsTool
 
 
@@ -15,7 +15,7 @@ def create_uniqueness_check_agent(llm: str, debug: bool = False) -> Agent:
     Returns:
         Agent: An instance of the Agent class configured for code quality inspection.
     """
-    tools = [tool_get_actor_readme,SearchRelatedActorsTool()]
+    tools = [GetActorReadmeTool(),SearchRelatedActorsTool()]
     return Agent(
         role='Apify Actor expert',
         goal=(

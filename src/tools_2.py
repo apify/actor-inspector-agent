@@ -8,7 +8,6 @@ To learn how to create a new tool, see:
 
 from __future__ import annotations
 
-# Ensure these are imported from your project's modules
 import datetime
 import logging
 
@@ -69,7 +68,7 @@ class GetActorPricingInformationTool(BaseTool):
 
         pricing_info = actor.get('pricingInfos')
         if not pricing_info:
-            raise ValueError(f'Failed to find pricing information for the Actor {actor_id}.')
+            return PricingInfo(pricing_model='PRICE_PER_USAGE')
 
         current_pricing = None
         now = datetime.datetime.now(datetime.UTC)
