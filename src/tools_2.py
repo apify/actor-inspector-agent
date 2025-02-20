@@ -9,48 +9,49 @@ To learn how to create a new tool, see:
 from __future__ import annotations
 
 import datetime
+import logging
 
 from apify_client import ApifyClient
-from crewai.tools import tool
+from crewai.tools import BaseTool, tool
+from pydantic import BaseModel, Field
 
 from src.models import ActorStoreList, PricingInfo
-from src.utils import get_apify_api_token
+from src.utils import get_apify_token
 
+# Importing crewAI tools
+logger = logging.getLogger('apify')
+
+class SearchRelatedActorsInput(BaseModel):
+    """Input schema for SearchRelatedActors."""
+    search: str = Field(..., description='A string of keywords to search by. The search is performed across the title,'
+                                         'name, description, username, and README of an Actor.')
+    limit: int = Field(10, description='The maximum number of Actors to return', gt=0, le=100)
+    offset: int = Field(0, description='The number of items to skip from the start of the results.', ge=0)
+
+class SearchRelatedActorsTool(BaseTool):
+    name: str = 'search_related_actors'
+    description: str = (
+        'Discover available Actors using a full-text search with specified keywords.'
+        'The tool returns a list of Actors, including details such as name, description, run statistics,'
+        'and pricing information, number of stars, and URL.'
+        'Search with only few keywords, otherwise it will return empty results'
+    )
+    args_schema: type[BaseModel] = SearchRelatedActorsInput
+
+    def _run(self, search: str, limit: int = 10, offset: int = 0) -> ActorStoreList | None:
+        """ Execute the tool's logic to search related actors by keyword. """
+        try:
+            logger.info(f"Searching for Actors related to '{search}'")
+            apify_client = ApifyClient(token=get_apify_token())
+            search_results = apify_client.store().list(limit=limit, offset=offset, search=search).items
+            logger.info(f"Found {len(search_results)} Actors related to '{search}'")
+        except Exception as e:
+            logger.exception(f"Failed to search for Actors related to '{search}'")
+            raise ValueError(f"Failed to search for Actors related to '{search}': {e}") from None
+
+        return ActorStoreList.model_validate(search_results, strict=False)
 
 @tool
-def search_related_actors_by_keyword(search: str, limit: int | None = 10, offset: int | None = 0) -> ActorStoreList | None:
-    """
-    Discover available Actors using full-text search with specified keywords.
-
-    The function returns a list of Actors, including details such as 
-    name, description, run statistics, pricing information, number of stars, and URL.
-
-    It may require multiple invocations of this method to find the most relevant Actor. 
-
-    Args:
-        limit (int, optional): The maximum number of Actors to return. Must be an integer
-            between 1 and 100. Default is 10.
-        offset (int, optional): The number of items to skip from the start of the results.
-            Must be a non-negative integer. Default is 0.
-        search (str, optional): A string of keywords to search by. The search is performed
-            across the title, name, description, username, and README of an Actor. Only basic
-            keyword search is supported; advanced search features are not available. Default
-            is an empty string.
-
-    Returns:
-        ActorStoreList: A list of Actors. Each dictionary contains the following fields:
-            - name (str): The name of the Actor.
-            - description (str): A description of the Actor.
-            - run statistics (dict): Statistics about the Actor's runs.
-            - pricing (dict): Pricing information for the Actor.
-            - stars (int): The number of stars the Actor has received.
-            - url (str): The URL of the Actor.
-    """
-    apify_client = ApifyClient(token=get_apify_api_token())
-    search_results = apify_client.store().list(limit=limit, offset=offset, search=search).items
-    return ActorStoreList.model_validate(search_results, strict=False)
-
-# @tool
 def tool_get_actor_pricing_information(actor_id: str) -> PricingInfo:
     """Get the pricing information of an Apify Actor.
 
@@ -63,7 +64,7 @@ def tool_get_actor_pricing_information(actor_id: str) -> PricingInfo:
     Raises:
         ValueError: If the README for the Actor cannot be retrieved.
     """
-    apify_client = ApifyClient(token=get_apify_api_token())
+    apify_client = ApifyClient(token=get_apify_token())
     if not (actor := apify_client.actor(actor_id).get()):
         msg = f'Actor {actor_id} not found.'
         raise ValueError(msg)
@@ -78,3 +79,9 @@ def tool_get_actor_pricing_information(actor_id: str) -> PricingInfo:
         current_pricing = pricing_entry
 
     return PricingInfo.model_validate(current_pricing)
+
+if __name__ == '__main__':
+    # Execute the tool with structured input
+    tool = SearchRelatedActorsTool()
+    result = tool._run({'search': 'apify', 'limit': 10, 'offset': 0})
+    print(result)
