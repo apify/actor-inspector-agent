@@ -7,11 +7,12 @@ To learn how to create a new tool, see:
 """
 
 from __future__ import annotations
-import requests
 
+import requests
 from apify_client import ApifyClient
 from crewai.tools import tool
 
+from src.const import REQUESTS_TIMEOUT_SECS
 from src.models import ActorInputDefinition, ActorInputProperty, GithubRepoContext, GithubRepoFile
 from src.utils import get_actor_latest_build, get_apify_token
 
@@ -70,7 +71,10 @@ def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition:
         properties=properties,
     )
 
+
 UITHUB_LINK = 'https://uithub.com/{repo_path}?accept=application/json&maxTokens={max_tokens}'
+
+
 @tool
 def tool_get_github_repo_context(repo_url: str, max_tokens: int = 120_000) -> GithubRepoContext:
     """Tool to get the context of a GitHub repository.
@@ -88,15 +92,26 @@ def tool_get_github_repo_context(repo_url: str, max_tokens: int = 120_000) -> Gi
     repo_path = repo_url.split('github.com/')[-1]
 
     url = UITHUB_LINK.format(repo_path=repo_path, max_tokens=max_tokens)
-    response = requests.get(url)
+    response = requests.get(url, timeout=REQUESTS_TIMEOUT_SECS)
 
     data = response.json()
     tree = data['tree']
     files: list[GithubRepoFile] = []
 
     for name, file in data.get('files', {}).items():
-        if any(substring in name.lower() for substring in ['license', 'package-lock.json', 'yarn.lock', 'readme.md',
-                'poetry.lock', 'requirements.txt', 'setup.py']):
+        if any(
+            substring in name.lower()
+            for substring in [
+                'license',
+                'package-lock.json',
+                'yarn.lock',
+                'readme.md',
+                'poetry.lock',
+                'requirements.txt',
+                'setup.py',
+                'uv.lock',
+            ]
+        ):
             continue
         if file['type'] != 'content':
             continue

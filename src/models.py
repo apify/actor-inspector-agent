@@ -20,8 +20,10 @@ class GithubRepoFile(BaseModel):
         name: The name of the file.
         content: The content of the file.
     """
+
     name: str
     content: str
+
 
 class GithubRepoContext(BaseModel):
     """
@@ -31,8 +33,10 @@ class GithubRepoContext(BaseModel):
         tree: A dictionary representing the file tree of the repository.
         files: A list of GithubRepoFile objects representing the files in the repository.
     """
+
     tree: dict
     files: list[GithubRepoFile]
+
 
 class ActorInputProperty(BaseModel):
     """Actor input property Pydantic model.

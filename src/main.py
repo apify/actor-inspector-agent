@@ -11,11 +11,10 @@ from __future__ import annotations
 import logging
 
 from apify import Actor
-from crewai import Agent, Crew, Task
+from crewai import Crew, Process, Task
 
-from src.models import AgentStructuredOutput
-from src.ppe_utils import charge_for_actor_start, charge_for_model_tokens
-from src.tools import tool_calculator_sum, tool_scrape_instagram_profile_posts
+from src.agents import create_code_quality_agent, create_manager_agent
+from src.ppe_utils import charge_for_actor_start
 
 fallback_input = {
     'query': 'This is a fallback test query, do nothing and ignore it.',
@@ -49,36 +48,31 @@ async def main() -> None:
 
         await charge_for_actor_start()
 
-        # Create a toolkit for the agent
-        tools = [tool_calculator_sum, tool_scrape_instagram_profile_posts]
-
-        # Create an agent
-        # For more information, see https://docs.crewai.com/concepts/agents
-        agent = Agent(
-            role='Helpful agent',
-            goal='Assist users with various tasks.',
-            backstory='I am a helpful agent that can assist you with various tasks.',
-            tools=tools,
-            verbose=debug,
-        )
-
-        # Create a task assigned to the agent
-        # For more information, see https://docs.crewai.com/concepts/tasks
-        task = Task(
-            description=query,
-            expected_output='A helpful response to the user query.',
-            agent=agent,
-            output_pydantic=AgentStructuredOutput,
-        )
+        manager_agent = create_manager_agent(model_name)
+        code_quality_agent = create_code_quality_agent(model_name, debug=debug)
 
         # Create a one-man crew
         # For more information, see https://docs.crewai.com/concepts/crews
-        crew = Crew(agents=[agent], tasks=[task])
+        crew = Crew(
+            agents=[
+                code_quality_agent,
+            ],
+            tasks=[
+                Task(
+                    description=query,
+                    expected_output='A helpful response to the user query.',
+                )
+            ],
+            manager_agent=manager_agent,
+            process=Process.hierarchical,
+        )
 
         # Kick off the crew and get the response
         crew_output = crew.kickoff()
         raw_response = crew_output.raw
-        response = crew_output.pydantic
+        Actor.log.debug(raw_response)
+        """
+        #response = crew_output.pydantic
 
         # Charge the user for the tokens used by the model
         total_tokens = crew_output.token_usage.total_tokens
@@ -101,3 +95,4 @@ async def main() -> None:
             }
         )
         Actor.log.info('Pushed the data into the dataset!')
+        """
