@@ -80,7 +80,7 @@ class Stats(BaseModel):
     """Actor statistics total runs, users"""
     totalRuns: int | None = None
     totalUsers30Days: int | None = None
-    publicActorRunStats30Days: list[dict] = []
+    publicActorRunStats30Days: dict = None
 
 # Nested model for 'pricingInfos'
 class ActorChargeEvent(BaseModel):

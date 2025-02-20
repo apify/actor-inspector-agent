@@ -8,17 +8,17 @@ To learn how to create a new tool, see:
 
 from __future__ import annotations
 
+# Ensure these are imported from your project's modules
 import datetime
 import logging
 
 from apify_client import ApifyClient
-from crewai.tools import BaseTool, tool
+from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from src.models import ActorStoreList, PricingInfo
 from src.utils import get_apify_token
 
-# Importing crewAI tools
 logger = logging.getLogger('apify')
 
 class SearchRelatedActorsInput(BaseModel):
@@ -51,37 +51,31 @@ class SearchRelatedActorsTool(BaseTool):
 
         return ActorStoreList.model_validate(search_results, strict=False)
 
-@tool
-def tool_get_actor_pricing_information(actor_id: str) -> PricingInfo:
-    """Get the pricing information of an Apify Actor.
 
-    Args:
-        actor_id (str): The ID of the Apify Actor.
+class GetActorPricingInformationInput(BaseModel):
+    """Input schema for GetActorPricingInformation."""
+    actor_id: str = Field(..., description='The ID of the Apify Actor.')
 
-    Returns:
-        str: The README content of the specified Actor.
+class GetActorPricingInformationTool(BaseTool):
+    name: str = 'get_actor_pricing_information'
+    description: str = 'Fetch and return the pricing information of an Apify Actor.'
+    args_schema: type[BaseModel] = GetActorPricingInformationInput
 
-    Raises:
-        ValueError: If the README for the Actor cannot be retrieved.
-    """
-    apify_client = ApifyClient(token=get_apify_token())
-    if not (actor := apify_client.actor(actor_id).get()):
-        msg = f'Actor {actor_id} not found.'
-        raise ValueError(msg)
+    def _run(self, actor_id: str) -> PricingInfo | None:
+        apify_client = ApifyClient(token=get_apify_token())
+        actor = apify_client.actor(actor_id).get()
+        if not actor:
+            raise ValueError(f'Actor {actor_id} not found.')
 
-    if not (pricing_info := actor.get('pricingInfos')):
-        raise ValueError(f'Failed to find pricing information for the Actor {actor_id}.')
+        pricing_info = actor.get('pricingInfos')
+        if not pricing_info:
+            raise ValueError(f'Failed to find pricing information for the Actor {actor_id}.')
 
-    current_pricing = None
-    for pricing_entry in pricing_info:
-        if pricing_entry.get('startedAt') > datetime.datetime.now(datetime.timezone.utc):
-            break
-        current_pricing = pricing_entry
+        current_pricing = None
+        now = datetime.datetime.now(datetime.UTC)
+        for pricing_entry in pricing_info:
+            if pricing_entry.get('startedAt') > now:
+                break
+            current_pricing = pricing_entry
 
-    return PricingInfo.model_validate(current_pricing)
-
-if __name__ == '__main__':
-    # Execute the tool with structured input
-    tool = SearchRelatedActorsTool()
-    result = tool._run({'search': 'apify', 'limit': 10, 'offset': 0})
-    print(result)
+        return PricingInfo.model_validate(current_pricing)

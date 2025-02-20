@@ -33,5 +33,5 @@
       "default": false
     }
   },
-  "required": ["actorId", "githubRepoUrl"]
+  "required": ["actorId"]
 }
