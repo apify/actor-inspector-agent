@@ -40,27 +40,28 @@ class SearchRelatedActorsTool(BaseTool):
     def _run(self, search: str, limit: int = 10, offset: int = 0) -> ActorStoreList | None:
         """ Execute the tool's logic to search related actors by keyword. """
         try:
-            logger.info(f"Searching for Actors related to '{search}'")
+            logger.info(f"Searching for Actors, search: '{search}'")
             apify_client = ApifyClient(token=get_apify_token())
             search_results = apify_client.store().list(limit=limit, offset=offset, search=search).items
             logger.info(f"Found {len(search_results)} Actors related to '{search}'")
+            return ActorStoreList.model_validate(search_results, strict=False)
         except Exception as e:
             logger.exception(f"Failed to search for Actors related to '{search}'")
             raise ValueError(f"Failed to search for Actors related to '{search}': {e}") from None
 
-        return ActorStoreList.model_validate(search_results, strict=False)
 
 
-class GetActorPricingInformationInput(BaseModel):
+class GetActorPricingInfoInput(BaseModel):
     """Input schema for GetActorPricingInformation."""
     actor_id: str = Field(..., description='The ID of the Apify Actor.')
 
-class GetActorPricingInformationTool(BaseTool):
+class GetActorPricingInfoTool(BaseTool):
     name: str = 'get_actor_pricing_information'
     description: str = 'Fetch and return the pricing information of an Apify Actor.'
-    args_schema: type[BaseModel] = GetActorPricingInformationInput
+    args_schema: type[BaseModel] = GetActorPricingInfoInput
 
     def _run(self, actor_id: str) -> PricingInfo | None:
+        logger.info('Getting pricing information for actor %s', actor_id)
         apify_client = ApifyClient(token=get_apify_token())
         actor = apify_client.actor(actor_id).get()
         if not actor:
@@ -68,7 +69,7 @@ class GetActorPricingInformationTool(BaseTool):
 
         pricing_info = actor.get('pricingInfos')
         if not pricing_info:
-            return PricingInfo(pricing_model='PRICE_PER_USAGE')
+            return PricingInfo(pricing_model='PAY_PER_PLATFORM_USAGE')
 
         current_pricing = None
         now = datetime.datetime.now(datetime.UTC)

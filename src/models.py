@@ -12,6 +12,12 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, RootModel
 from pydantic.alias_generators import to_camel
 
+config_to_camel = ConfigDict(
+    alias_generator=to_camel,
+    populate_by_name=True,
+    from_attributes=True,
+)
+
 
 class CodeQualityOutput(BaseModel):
     contains_tests: bool
@@ -81,25 +87,18 @@ class Stats(BaseModel):
     total_runs: int | None = None
     total_users30_days: int | None = None
     public_actor_run_stats30_days: dict = None
-    model_config = ConfigDict(
-        alias_generator=to_camel,
-        populate_by_name=True,
-        from_attributes=True,
-    )
+    model_config = config_to_camel
 
 # Nested model for 'pricingInfos'
 class ActorChargeEvent(BaseModel):
     event_description: str
     event_price_usd: float
     event_title: str
-    model_config = ConfigDict(
-        alias_generator=to_camel,
-        populate_by_name=True,
-        from_attributes=True,
-    )
+    model_config = config_to_camel
 
 class PricingPerEvent(BaseModel):
-    actor_charge_events: dict[str, ActorChargeEvent]
+    actor_charge_events: dict[str, ActorChargeEvent] | None = None
+    model_config = config_to_camel
 
 class PricingInfo(BaseModel):
     """Pricing information: Pay per usage, Pay per results, Pay per event."""
@@ -109,11 +108,7 @@ class PricingInfo(BaseModel):
     apify_margin_percentage: float | None = None
     minimal_max_total_charge_usd: float | None = None
     pricing_per_event: PricingPerEvent | None = None
-    model_config = ConfigDict(
-        alias_generator=to_camel,
-        populate_by_name=True,
-        from_attributes=True,
-    )
+    model_config = config_to_camel
 
 class ActorStore(BaseModel):
     """ Actor Store List Pydantic model."""
@@ -125,11 +120,7 @@ class ActorStore(BaseModel):
     current_pricing_info: PricingInfo | None = None
     url: str | None = None
     total_stars: int | None = None
-    model_config = ConfigDict(
-        alias_generator=to_camel,
-        populate_by_name=True,
-        from_attributes=True,
-    )
+    model_config = config_to_camel
 
 class ActorStoreList(RootModel):
     """ Actor Store List Pydantic model."""
