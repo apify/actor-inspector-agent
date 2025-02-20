@@ -7,7 +7,7 @@ Agent Actor Inspector is an Apify Actor designed to evaluate and rate other Apif
 - **README** – Is it well-written and properly documented?
 - **Input description** – Is it clear and well-defined?
 - **Examples** – Are relevant examples provided?
-- **Pricing model** – Is it **PPE, PPR,** or usage-based?
+- **Pricing / Pricing model** – Is it **PPE, PPR,** or usage-based?
 - **Open-source** – Is the code publicly available?
 - **Code quality** – Is the implementation clean and maintainable?
 - **Functionality** – Does the Agent perform as expected?

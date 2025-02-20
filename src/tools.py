@@ -7,14 +7,13 @@ To learn how to create a new tool, see:
 """
 
 from __future__ import annotations
-import os
 
-from apify import Actor
 from apify_client import ApifyClient
 from crewai.tools import tool
 
 from src.models import ActorInputDefinition, ActorInputProperty
 from src.utils import get_actor_latest_build, get_apify_api_token
+
 
 @tool
 def tool_get_actor_readme(actor_id: str) -> str:
@@ -32,8 +31,8 @@ def tool_get_actor_readme(actor_id: str) -> str:
     apify_client = ApifyClient(token=get_apify_api_token())
     build = get_actor_latest_build(apify_client, actor_id)
 
-    if not (readme := build.get("actorDefinition", {}).get("readme")):
-        raise ValueError(f"Failed to get the README for the Actor {actor_id}")
+    if not (readme := build.get('actorDefinition', {}).get('readme')):
+        raise ValueError(f'Failed to get the README for the Actor {actor_id}')
 
     return readme
 
