@@ -41,8 +41,10 @@ def tool_get_actor_readme(actor_id: str) -> str:
 
 
 @tool
-def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition:
+def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition | None:
     """Tool to get the input schema of an Apify Actor.
+
+    If the input schema is not found a None value is returned.
 
     Args:
         actor_id (str): The ID or name of the Apify Actor.
@@ -61,7 +63,8 @@ def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition:
         raise ValueError(f'Actor definition not found in the Actor build for Actor: {actor_id}')
 
     if not (actor_input := actor_definition.get('input')):
-            raise ValueError(f'Input schema not found in the Actor build for Actor: {actor_id}')
+        return None
+        #raise ValueError(f'Input schema not found in the Actor build for Actor: {actor_id}')
 
     properties: dict[str, ActorInputProperty] = {}
     for name, prop in actor_input.get('properties', {}).items():
@@ -94,7 +97,7 @@ def tool_get_github_repo_context(repo_url: str, max_tokens: int = 120_000) -> Gi
     Raises:
         ValueError: If the repository context cannot be retrieved.
     """
-    repo_path = repo_url.split('github.com/')[-1]
+    repo_path = repo_url.split('github.com/')[-1].replace('.git', '')
 
     url = UITHUB_LINK.format(repo_path=repo_path, max_tokens=max_tokens)
     response = requests.get(url, timeout=REQUESTS_TIMEOUT_SECS)

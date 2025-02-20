@@ -52,6 +52,8 @@ async def main() -> None:
         if not (github_repo_url := build.get('actVersion', {}).get('gitRepoUrl')):
             raise ValueError(f'Failed to get the GitHub repository URL for the Actor {actor_id}!')
 
+        print(github_repo_url)
+
         await charge_for_actor_start()
 
         inspector_agent = create_actor_inspector_agent(model_name)
