@@ -1,0 +1,14 @@
+{
+	"actorSpecification": 1,
+	"name": "agent-actor-inspector",
+	"title": "Agent Actor Inspector",
+	"description": "Agent Actor Inspector is an Apify Actor designed to evaluate and rate other Apify Actors based on criteria such as documentation quality, input clarity, code standards, functionality, performance, and uniqueness.",
+	"version": "0.0",
+	"buildTag": "latest",
+	"environmentVariables": {},
+	"input": "./input_schema.json",
+	"storages": {
+		"dataset": "./dataset_schema.json"
+	},
+	"dockerfile": "./Dockerfile"
+}
