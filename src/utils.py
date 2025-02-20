@@ -1,16 +1,18 @@
 import os
+
 import requests
 from apify_client import ApifyClient
 
 from src.const import REQUESTS_TIMEOUT_SECS
 
-
 APIFY_API_ENDPOINT_GET_DEFAULT_BUILD = 'https://api.apify.com/v2/acts/{actor_id}/builds/default'
 
-def get_apify_api_token() -> str:
-    if not (token := os.getenv('APIFY_API_TOKEN')):
-        raise ValueError('APIFY_API_TOKEN environment variable is not set')
+
+def get_apify_token() -> str:
+    if not (token := os.getenv('APIFY_TOKEN')):
+        raise ValueError('APIFY_TOKEN environment variable is not set')
     return token
+
 
 def get_actor_latest_build(apify_client: ApifyClient, actor_id: str) -> dict:
     """Get the latest build of an Actor from the default build tag.

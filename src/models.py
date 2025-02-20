@@ -6,9 +6,33 @@ Resources:
 """
 
 from __future__ import annotations
-from typing_extensions import Any
+
+from typing import Any
 
 from pydantic import BaseModel
+
+
+class GithubRepoFile(BaseModel):
+    """
+    GithubRepoFile Pydantic model.
+
+    Attributes:
+        name: The name of the file.
+        content: The content of the file.
+    """
+    name: str
+    content: str
+
+class GithubRepoContext(BaseModel):
+    """
+    GithubRepoContext Pydantic model.
+
+    Attributes:
+        tree: A dictionary representing the file tree of the repository.
+        files: A list of GithubRepoFile objects representing the files in the repository.
+    """
+    tree: dict
+    files: list[GithubRepoFile]
 
 class ActorInputProperty(BaseModel):
     """Actor input property Pydantic model.
@@ -23,6 +47,7 @@ class ActorInputProperty(BaseModel):
     description: str
     type: str
     default: Any | None
+
 
 class ActorInputDefinition(BaseModel):
     """Actor input definition Pydantic model.

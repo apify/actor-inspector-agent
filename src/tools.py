@@ -7,14 +7,14 @@ To learn how to create a new tool, see:
 """
 
 from __future__ import annotations
-import os
+import requests
 
-from apify import Actor
 from apify_client import ApifyClient
 from crewai.tools import tool
 
-from src.models import ActorInputDefinition, ActorInputProperty
-from src.utils import get_actor_latest_build, get_apify_api_token
+from src.models import ActorInputDefinition, ActorInputProperty, GithubRepoContext, GithubRepoFile
+from src.utils import get_actor_latest_build, get_apify_token
+
 
 @tool
 def tool_get_actor_readme(actor_id: str) -> str:
@@ -29,13 +29,14 @@ def tool_get_actor_readme(actor_id: str) -> str:
     Raises:
         ValueError: If the README for the Actor cannot be retrieved.
     """
-    apify_client = ApifyClient(token=get_apify_api_token())
+    apify_client = ApifyClient(token=get_apify_token())
     build = get_actor_latest_build(apify_client, actor_id)
 
-    if not (readme := build.get("actorDefinition", {}).get("readme")):
-        raise ValueError(f"Failed to get the README for the Actor {actor_id}")
+    if not (readme := build.get('actorDefinition', {}).get('readme')):
+        raise ValueError(f'Failed to get the README for the Actor {actor_id}')
 
     return readme
+
 
 @tool
 def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition:
@@ -50,7 +51,7 @@ def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition:
     Raises:
         ValueError: If the input schema for the Actor cannot be retrieved.
     """
-    apify_client = ApifyClient(token=get_apify_api_token())
+    apify_client = ApifyClient(token=get_apify_token())
     build = get_actor_latest_build(apify_client, actor_id)
 
     if not (actor_input := build.get('actorDefinition', {}).get('input')):
@@ -68,3 +69,37 @@ def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition:
         description=actor_input.get('description'),
         properties=properties,
     )
+
+UITHUB_LINK = 'https://uithub.com/{repo_path}?accept=application/json&maxTokens={max_tokens}'
+@tool
+def tool_get_github_repo_context(repo_url: str, max_tokens: int = 120_000) -> GithubRepoContext:
+    """Tool to get the context of a GitHub repository.
+
+    Args:
+        repo_url (str): The URL of the GitHub repository.
+        max_tokens (int, optional): The maximum number of tokens to retrieve. Defaults to 120,000.
+
+    Returns:
+        GithubRepoContext: The context of the specified GitHub repository.
+
+    Raises:
+        ValueError: If the repository context cannot be retrieved.
+    """
+    repo_path = repo_url.split('github.com/')[-1]
+
+    url = UITHUB_LINK.format(repo_path=repo_path, max_tokens=max_tokens)
+    response = requests.get(url)
+
+    data = response.json()
+    tree = data['tree']
+    files: list[GithubRepoFile] = []
+
+    for name, file in data.get('files', {}).items():
+        if any(substring in name.lower() for substring in ['license', 'package-lock.json', 'yarn.lock', 'readme.md',
+                'poetry.lock', 'requirements.txt', 'setup.py']):
+            continue
+        if file['type'] != 'content':
+            continue
+        files.append(GithubRepoFile(name=name, content=file['content']))
+
+    return GithubRepoContext(tree=tree, files=files)
