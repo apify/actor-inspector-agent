@@ -8,76 +8,180 @@ To learn how to create a new tool, see:
 
 from __future__ import annotations
 
-from apify import Actor
+import logging
+
+import requests
 from apify_client import ApifyClient
-from crewai.tools import tool
+from crewai.tools import BaseTool, tool
+from pydantic import BaseModel, Field
 
-from src.models import InstagramPost
+from src.const import REQUESTS_TIMEOUT_SECS
+from src.models import ActorInputDefinition, ActorInputProperty, GithubRepoContext, GithubRepoFile
+from src.utils import get_actor_latest_build, get_apify_token
+
+logger = logging.getLogger('apify')
+
+
+class GetActorReadmeInput(BaseModel):
+    """Input schema for GetActorReadme."""
+    actor_id: str = Field(..., description='The ID of the Apify Actor.')
+
+class GetActorReadmeTool(BaseTool):
+    name: str = 'get_actor_readme'
+    description: str = 'Fetch the README content of the specified Apify Actor.'
+    args_schema: type[BaseModel] = GetActorReadmeInput
+
+    def _run(self, actor_id: str) -> str:
+        logger.info('Getting README for actor %s', actor_id)
+        apify_client = ApifyClient(token=get_apify_token())
+        build = get_actor_latest_build(apify_client, actor_id)
+        readme = build.get('actorDefinition', {}).get('readme')
+        if not readme:
+            raise ValueError(f'Failed to get the README for the Actor {actor_id}')
+        return readme
 
 
 @tool
-def tool_calculator_sum(numbers: list[int]) -> int:
-    """Tool to calculate the sum of a list of numbers.
+def tool_get_actor_readme(actor_id: str) -> str:
+    """Tool to get the README of an Apify Actor.
 
     Args:
-        numbers (list[int]): List of numbers to sum.
+        actor_id (str): The ID of the Apify Actor.
 
     Returns:
-        int: Sum of the numbers.
-    """
-    return sum(numbers)
-
-
-@tool
-def tool_scrape_instagram_profile_posts(handle: str, max_posts: int = 30) -> list[InstagramPost]:
-    """Tool to scrape Instagram profile posts.
-
-    Args:
-        handle (str): Instagram handle of the profile to scrape (without the '@' symbol).
-        max_posts (int, optional): Maximum number of posts to scrape. Defaults to 30.
-
-    Returns:
-        list[InstagramPost]: List of Instagram posts scraped from the profile.
+        str: The README content of the specified Actor.
 
     Raises:
-        RuntimeError: If the Actor fails to start.
+        ValueError: If the README for the Actor cannot be retrieved.
     """
-    run_input = {
-        'directUrls': [f'https://www.instagram.com/{handle}/'],
-        'resultsLimit': max_posts,
-        'resultsType': 'posts',
-        'searchLimit': 1,
-    }
-    apify_client = ApifyClient(token=Actor.config.token)
-    if not (run := apify_client.actor('apify/instagram-scraper').call(run_input=run_input)):
-        msg = 'Failed to start the Actor apify/instagram-scraper'
-        raise RuntimeError(msg)
+    logger.info('Getting README for actor %s', actor_id)
+    apify_client = ApifyClient(token=get_apify_token())
+    build = get_actor_latest_build(apify_client, actor_id)
 
-    dataset_id = run['defaultDatasetId']
-    dataset_items: list[dict] = (apify_client.dataset(dataset_id).list_items()).items
-    posts: list[InstagramPost] = []
-    for item in dataset_items:
-        url: str | None = item.get('url')
-        caption: str | None = item.get('caption')
-        alt: str | None = item.get('alt')
-        likes: int | None = item.get('likesCount')
-        comments: int | None = item.get('commentsCount')
-        timestamp: str | None = item.get('timestamp')
+    if not (readme := build.get('actorDefinition', {}).get('readme')):
+        raise ValueError(f'Failed to get the README for the Actor {actor_id}')
 
-        # only include posts with all required fields
-        if not url or not likes or not comments or not timestamp:
-            Actor.log.warning('Skipping post with missing fields: %s', item)
-            continue
+    return readme
 
-        posts.append(
-            InstagramPost(
-                url=url,
-                likes=likes,
-                comments=comments,
-                timestamp=timestamp,
-                caption=caption,
-                alt=alt,
-            )
-        )
 
-    return posts
+@tool
+def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition | None:
+    """Tool to get the input schema of an Apify Actor.
+
+    If the input schema is not found a None value is returned.
+
+    Args:
+        actor_id (str): The ID or name of the Apify Actor.
+
+    Returns:
+        ActorInputDefinition: The input schema of the specified Actor.
+
+    Raises:
+        ValueError: If the input schema for the Actor cannot be retrieved.
+    """
+    apify_client = ApifyClient(token=get_apify_token())
+    build = get_actor_latest_build(apify_client, actor_id)
+
+
+    if not (actor_definition := build.get('actorDefinition')):
+        raise ValueError(f'Actor definition not found in the Actor build for Actor: {actor_id}')
+
+    if not (actor_input := actor_definition.get('input')):
+        return None
+        #raise ValueError(f'Input schema not found in the Actor build for Actor: {actor_id}')
+
+    properties: dict[str, ActorInputProperty] = {}
+    for name, prop in actor_input.get('properties', {}).items():
+        # Use prefill, if available, then default, if available
+        prop['default'] = prop.get('prefill', prop.get('default'))
+
+        properties[name] = ActorInputProperty(**prop)
+
+    return ActorInputDefinition(
+        title=actor_definition.get('title'),
+        description=actor_definition.get('description'),
+        properties=properties,
+    )
+
+
+UITHUB_LINK = 'https://uithub.com/{repo_path}?accept=application/json&maxTokens={max_tokens}'
+
+
+#@tool
+#def tool_get_github_repo_context(repository_url: str, max_tokens: int = 120_000) -> GithubRepoContext:
+#    """Tool to get the context of a GitHub repository.
+#
+#    Args:
+#        repo_url (str): The URL of the GitHub repository for example https://github.com/user/repository
+#    """
+#    repo_path = repository_url.split('github.com/')[-1].replace('.git', '')
+#    print("tool getting", repo_path)
+#
+#    url = UITHUB_LINK.format(repo_path=repo_path, max_tokens=max_tokens)
+#    response = requests.get(url, timeout=REQUESTS_TIMEOUT_SECS)
+#
+#    data = response.json()
+#    tree = data['tree']
+#    files: list[GithubRepoFile] = []
+#
+#    for name, file in data.get('files', {}).items():
+#        if any(
+#            substring in name.lower()
+#            for substring in [
+#                'license',
+#                'package-lock.json',
+#                'yarn.lock',
+#                'readme.md',
+#                'poetry.lock',
+#                'requirements.txt',
+#                'setup.py',
+#                'uv.lock',
+#            ]
+#        ):
+#            continue
+#        if file['type'] != 'content':
+#            continue
+#        files.append(GithubRepoFile(name=name, content=file['content']))
+#
+#    return GithubRepoContext(tree=tree, files=files)
+
+class GetGithubRepoContextInput(BaseModel):
+    """Input schema for GetGithubRepoContext."""
+    repository_url: str = Field(..., description='The URL of the GitHub repository')
+    max_tokens: int = Field(120_000, description='Maximum number of tokens to retrieve')
+
+class GetGithubRepoContextTool(BaseTool):
+    name: str = 'get_github_repo_context'
+    description: str = 'Fetch the context of the specified GitHub repository.'
+    args_schema: type[BaseModel] = GetGithubRepoContextInput
+
+    def _run(self, repository_url: str, max_tokens: int = 120_000) -> GithubRepoContext:
+        repo_path = repository_url.split('github.com/')[-1].replace('.git', '')
+
+        url = UITHUB_LINK.format(repo_path=repo_path, max_tokens=max_tokens)
+        response = requests.get(url, timeout=REQUESTS_TIMEOUT_SECS)
+
+        data = response.json()
+        tree = data['tree']
+        files: list[GithubRepoFile] = []
+
+        for name, file in data.get('files', {}).items():
+            if any(
+                substring in name.lower()
+                for substring in [
+                    'license',
+                    'package-lock.json',
+                    'yarn.lock',
+                    'readme.md',
+                    'poetry.lock',
+                    'requirements.txt',
+                    'setup.py',
+                    'uv.lock',
+                ]
+            ):
+                continue
+            if file['type'] != 'content':
+                continue
+            files.append(GithubRepoFile(name=name, content=file['content']))
+
+        return GithubRepoContext(tree=tree, files=files)

@@ -1,0 +1,1 @@
+REQUESTS_TIMEOUT_SECS: float = 10.0

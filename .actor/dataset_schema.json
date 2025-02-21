@@ -4,7 +4,7 @@
     "overview": {
       "title": "Overview",
       "transformation": {
-        "fields": ["actorId", "readme", "inputSchema"]
+        "fields": ["actorId", "response"]
       },
       "display": {
         "component": "table",
@@ -13,12 +13,8 @@
             "label": "actorId",
             "format": "text"
           },
-          "readme": {
-            "label": "Readme",
-            "format": "text"
-          },
-          "inputSchema": {
-            "label": "Input Schema",
+          "response": {
+            "label": "response",
             "format": "text"
           }
         }
