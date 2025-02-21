@@ -121,10 +121,11 @@ class GetGithubRepoContextTool(BaseTool):
 
     def _run(self, repository_url: str, max_tokens: int = 120_000) -> GithubRepoContext | str:
         verify_response = requests.get(repository_url, timeout=REQUESTS_TIMEOUT_SECS)
-        if verify_response.status_code == 404:
+        if verify_response.status_code == requests.codes.not_found:
             return (
-                f"Repository {repository_url} does not exist. Code is not available. "
-                "Skip the tool and grade the code as N/A."
+                f'Repository {repository_url} does not exist. Code is not available. '
+                'If other repository links are available, use them; otherwise, '
+                'skip the tool and grade the code as N/A.'
             )
 
         repo_path = repository_url.split('github.com/')[-1].replace('.git', '')
