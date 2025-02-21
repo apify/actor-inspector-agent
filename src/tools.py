@@ -8,14 +8,37 @@ To learn how to create a new tool, see:
 
 from __future__ import annotations
 
+import logging
+
 import requests
 from apify_client import ApifyClient
-from crewai.tools import tool
+from crewai.tools import BaseTool, tool
+from pydantic import BaseModel, Field
 
 from src.const import REQUESTS_TIMEOUT_SECS
 from src.models import ActorInputDefinition, ActorInputProperty, GithubRepoContext, GithubRepoFile
 from src.utils import get_actor_latest_build, get_apify_token
 
+logger = logging.getLogger('apify')
+
+
+class GetActorReadmeInput(BaseModel):
+    """Input schema for GetActorReadme."""
+    actor_id: str = Field(..., description='The ID of the Apify Actor.')
+
+class GetActorReadmeTool(BaseTool):
+    name: str = 'get_actor_readme'
+    description: str = 'Fetch the README content of the specified Apify Actor.'
+    args_schema: type[BaseModel] = GetActorReadmeInput
+
+    def _run(self, actor_id: str) -> str:
+        logger.info('Getting README for actor %s', actor_id)
+        apify_client = ApifyClient(token=get_apify_token())
+        build = get_actor_latest_build(apify_client, actor_id)
+        readme = build.get('actorDefinition', {}).get('readme')
+        if not readme:
+            raise ValueError(f'Failed to get the README for the Actor {actor_id}')
+        return readme
 
 
 @tool
@@ -31,6 +54,7 @@ def tool_get_actor_readme(actor_id: str) -> str:
     Raises:
         ValueError: If the README for the Actor cannot be retrieved.
     """
+    logger.info('Getting README for actor %s', actor_id)
     apify_client = ApifyClient(token=get_apify_token())
     build = get_actor_latest_build(apify_client, actor_id)
 
@@ -83,46 +107,81 @@ def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition | None:
 UITHUB_LINK = 'https://uithub.com/{repo_path}?accept=application/json&maxTokens={max_tokens}'
 
 
-@tool
-def tool_get_github_repo_context(repo_url: str, max_tokens: int = 120_000) -> GithubRepoContext:
-    """Tool to get the context of a GitHub repository.
+#@tool
+#def tool_get_github_repo_context(repository_url: str, max_tokens: int = 120_000) -> GithubRepoContext:
+#    """Tool to get the context of a GitHub repository.
+#
+#    Args:
+#        repo_url (str): The URL of the GitHub repository for example https://github.com/user/repository
+#    """
+#    repo_path = repository_url.split('github.com/')[-1].replace('.git', '')
+#    print("tool getting", repo_path)
+#
+#    url = UITHUB_LINK.format(repo_path=repo_path, max_tokens=max_tokens)
+#    response = requests.get(url, timeout=REQUESTS_TIMEOUT_SECS)
+#
+#    data = response.json()
+#    tree = data['tree']
+#    files: list[GithubRepoFile] = []
+#
+#    for name, file in data.get('files', {}).items():
+#        if any(
+#            substring in name.lower()
+#            for substring in [
+#                'license',
+#                'package-lock.json',
+#                'yarn.lock',
+#                'readme.md',
+#                'poetry.lock',
+#                'requirements.txt',
+#                'setup.py',
+#                'uv.lock',
+#            ]
+#        ):
+#            continue
+#        if file['type'] != 'content':
+#            continue
+#        files.append(GithubRepoFile(name=name, content=file['content']))
+#
+#    return GithubRepoContext(tree=tree, files=files)
 
-    Args:
-        repo_url (str): The URL of the GitHub repository.
-        max_tokens (int, optional): The maximum number of tokens to retrieve. Defaults to 120,000.
+class GetGithubRepoContextInput(BaseModel):
+    """Input schema for GetGithubRepoContext."""
+    repository_url: str = Field(..., description='The URL of the GitHub repository')
+    max_tokens: int = Field(120_000, description='Maximum number of tokens to retrieve')
 
-    Returns:
-        GithubRepoContext: The context of the specified GitHub repository.
+class GetGithubRepoContextTool(BaseTool):
+    name: str = 'get_github_repo_context'
+    description: str = 'Fetch the context of the specified GitHub repository.'
+    args_schema: type[BaseModel] = GetGithubRepoContextInput
 
-    Raises:
-        ValueError: If the repository context cannot be retrieved.
-    """
-    repo_path = repo_url.split('github.com/')[-1].replace('.git', '')
+    def _run(self, repository_url: str, max_tokens: int = 120_000) -> GithubRepoContext:
+        repo_path = repository_url.split('github.com/')[-1].replace('.git', '')
 
-    url = UITHUB_LINK.format(repo_path=repo_path, max_tokens=max_tokens)
-    response = requests.get(url, timeout=REQUESTS_TIMEOUT_SECS)
+        url = UITHUB_LINK.format(repo_path=repo_path, max_tokens=max_tokens)
+        response = requests.get(url, timeout=REQUESTS_TIMEOUT_SECS)
 
-    data = response.json()
-    tree = data['tree']
-    files: list[GithubRepoFile] = []
+        data = response.json()
+        tree = data['tree']
+        files: list[GithubRepoFile] = []
 
-    for name, file in data.get('files', {}).items():
-        if any(
-            substring in name.lower()
-            for substring in [
-                'license',
-                'package-lock.json',
-                'yarn.lock',
-                'readme.md',
-                'poetry.lock',
-                'requirements.txt',
-                'setup.py',
-                'uv.lock',
-            ]
-        ):
-            continue
-        if file['type'] != 'content':
-            continue
-        files.append(GithubRepoFile(name=name, content=file['content']))
+        for name, file in data.get('files', {}).items():
+            if any(
+                substring in name.lower()
+                for substring in [
+                    'license',
+                    'package-lock.json',
+                    'yarn.lock',
+                    'readme.md',
+                    'poetry.lock',
+                    'requirements.txt',
+                    'setup.py',
+                    'uv.lock',
+                ]
+            ):
+                continue
+            if file['type'] != 'content':
+                continue
+            files.append(GithubRepoFile(name=name, content=file['content']))
 
-    return GithubRepoContext(tree=tree, files=files)
+        return GithubRepoContext(tree=tree, files=files)

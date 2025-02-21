@@ -1,4 +1,4 @@
-FROM apify/actor-python:3.13
+FROM apify/actor-python:3.12
 
 # Second, copy just requirements.txt into the Actor image,
 # since it should be the only file that affects the dependency install in the next step,

@@ -9,72 +9,152 @@ To learn how to create a new tool, see:
 from __future__ import annotations
 
 import datetime
+import logging
 
 from apify_client import ApifyClient
-from crewai.tools import tool
+from crewai.tools import BaseTool
+from pydantic import BaseModel, Field
 
 from src.models import ActorStoreList, PricingInfo
-from src.utils import get_apify_api_token
+from src.utils import get_apify_token
+
+logger = logging.getLogger('apify')
+
+class SearchRelatedActorsInput(BaseModel):
+    """Input schema for SearchRelatedActors."""
+    search: str = Field(..., description='A string of keywords to search by. The search is performed across the title,'
+                                         'name, description, username, and README of an Actor.')
+    limit: int = Field(10, description='The maximum number of Actors to return', gt=0, le=100)
+    offset: int = Field(0, description='The number of items to skip from the start of the results.', ge=0)
+
+class SearchRelatedActorsTool(BaseTool):
+    name: str = 'search_related_actors'
+    description: str = (
+        'Discover available Actors using a full-text search with specified keywords.'
+        'The tool returns a list of Actors, including details such as name, description, run statistics,'
+        'and pricing information, number of stars, and URL.'
+        'Search with only few keywords, otherwise it will return empty results'
+    )
+    args_schema: type[BaseModel] = SearchRelatedActorsInput
+
+    def _run(self, search: str, limit: int = 10, offset: int = 0) -> ActorStoreList | None:
+        """ Execute the tool's logic to search related actors by keyword. """
+        try:
+            logger.info(f"Searching for Actors, search: '{search}'")
+            apify_client = ApifyClient(token=get_apify_token())
+            search_results = apify_client.store().list(limit=limit, offset=offset, search=search).items
+            logger.info(f"Found {len(search_results)} Actors related to '{search}'")
+            return ActorStoreList.model_validate(search_results, strict=False)
+        except Exception as e:
+            logger.exception(f"Failed to search for Actors related to '{search}'")
+            raise ValueError(f"Failed to search for Actors related to '{search}': {e}") from None
 
 
-@tool
-def search_related_actors_by_keyword(search: str, limit: int | None = 10, offset: int | None = 0) -> ActorStoreList | None:
-    """
-    Discover available Actors using full-text search with specified keywords.
 
-    The function returns a list of Actors, including details such as 
-    name, description, run statistics, pricing information, number of stars, and URL.
+class GetActorPricingInfoInput(BaseModel):
+    """Input schema for GetActorPricingInformation."""
+    actor_id: str = Field(..., description='The ID of the Apify Actor.')
 
-    It may require multiple invocations of this method to find the most relevant Actor. 
+class GetActorPricingInfoTool(BaseTool):
+    name: str = 'get_actor_pricing_information'
+    description: str = 'Fetch and return the pricing information of an Apify Actor.'
+    args_schema: type[BaseModel] = GetActorPricingInfoInput
 
-    Args:
-        limit (int, optional): The maximum number of Actors to return. Must be an integer
-            between 1 and 100. Default is 10.
-        offset (int, optional): The number of items to skip from the start of the results.
-            Must be a non-negative integer. Default is 0.
-        search (str, optional): A string of keywords to search by. The search is performed
-            across the title, name, description, username, and README of an Actor. Only basic
-            keyword search is supported; advanced search features are not available. Default
-            is an empty string.
+    def _run(self, actor_id: str) -> PricingInfo | None:
+        logger.info('Getting pricing information for actor %s', actor_id)
+        apify_client = ApifyClient(token=get_apify_token())
+        actor = apify_client.actor(actor_id).get()
+        if not actor:
+            raise ValueError(f'Actor {actor_id} not found.')
 
-    Returns:
-        ActorStoreList: A list of Actors. Each dictionary contains the following fields:
-            - name (str): The name of the Actor.
-            - description (str): A description of the Actor.
-            - run statistics (dict): Statistics about the Actor's runs.
-            - pricing (dict): Pricing information for the Actor.
-            - stars (int): The number of stars the Actor has received.
-            - url (str): The URL of the Actor.
-    """
-    apify_client = ApifyClient(token=get_apify_api_token())
-    search_results = apify_client.store().list(limit=limit, offset=offset, search=search).items
-    return ActorStoreList.model_validate(search_results, strict=False)
+        pricing_info = actor.get('pricingInfos')
+        if not pricing_info:
+            return PricingInfo(pricing_model='PAY_PER_PLATFORM_USAGE')
 
-# @tool
-def tool_get_actor_pricing_information(actor_id: str) -> PricingInfo:
-    """Get the pricing information of an Apify Actor.
+        current_pricing = None
+        now = datetime.datetime.now(datetime.UTC)
+        for pricing_entry in pricing_info:
+            if pricing_entry.get('startedAt') > now:
+                break
+            current_pricing = pricing_entry
 
-    Args:
-        actor_id (str): The ID of the Apify Actor.
+        return PricingInfo.model_validate(current_pricing)
 
-    Returns:
-        str: The README content of the specified Actor.
 
-    Raises:
-        ValueError: If the README for the Actor cannot be retrieved.
-    """
-    apify_client = ApifyClient(token=get_apify_api_token())
-    if not (actor := apify_client.actor(actor_id).get()):
-        msg = f'Actor {actor_id} not found.'
-        raise ValueError(msg)
+class GetApifyPlatformPricing(BaseTool):
+    name: str = 'get_apify_platform_pricing_per_usage'
+    description: str = 'Get pricing plans for Apify Platform for pay per platform usage.'
 
-    if not (pricing_info := actor.get('pricingInfos')):
-        raise ValueError(f'Failed to find pricing information for the Actor {actor_id}.')
-
-    current_pricing = None
-    for pricing_entry in pricing_info:
-        if pricing_entry.get('startedAt') > datetime.datetime.now(datetime.timezone.utc):
-            break
-        current_pricing = pricing_entry
-
-    return PricingInfo.model_validate(current_pricing)
+    def _run(self) -> list[dict]:
+        logger.info('Getting pricing information of Apify')
+        return [
+          {
+            'name': 'Free',
+            'cost': '$0 per month',
+            'prepaid_usage': '$5',
+            'compute_unit_pricing': '$0.4 per CU',
+            'actor_ram': '8 GB',
+            'max_concurrent_runs': 25,
+            'support_level': 'Community support',
+            'proxy_access': {
+              'residential_proxies': '$8 per GB',
+              'datacenter_proxies': '5 IPs included',
+              'serps_proxy': '$2.5 per 1,000 SERPs'
+            }
+          },
+          {
+            'name': 'Starter',
+            'cost': '$49 per month',
+            'prepaid_usage': '$49',
+            'compute_unit_pricing': '$0.4 per CU',
+            'actor_ram': '32 GB',
+            'max_concurrent_runs': 32,
+            'support_level': 'Chat support',
+            'proxy_access': {
+              'residential_proxies': '$8 per GB',
+              'datacenter_proxies': '30 IPs included; additional IPs at $1 per IP',
+              'serps_proxy': '$2.5 per 1,000 SERPs'
+            }
+          },
+          {
+            'name': 'Scale',
+            'cost': '$199 per month',
+            'prepaid_usage': '$199',
+            'compute_unit_pricing': '$0.3 per CU',
+            'actor_ram': '128 GB',
+            'max_concurrent_runs': 128,
+            'support_level': 'Priority chat support',
+            'personal_tech_training': '1 hour per quarter',
+            'proxy_access': {
+              'residential_proxies': '$7.5 per GB',
+              'datacenter_proxies': '200 IPs included; additional IPs at $0.8 per IP',
+              'serps_proxy': '$2 per 1,000 SERPs'
+            }
+          },
+          {
+            'name': 'Business',
+            'cost': '$999 per month',
+            'prepaid_usage': '$999',
+            'compute_unit_pricing': '$0.25 per CU',
+            'actor_ram': '256 GB',
+            'max_concurrent_runs': 256,
+            'support_level': 'Dedicated account manager',
+            'personal_tech_training': '1 hour per month',
+            'proxy_access': {
+              'residential_proxies': '$7 per GB',
+              'datacenter_proxies': '500 IPs included; additional IPs at $0.6 per IP',
+              'serps_proxy': '$1.7 per 1,000 SERPs'
+            }
+          },
+          {
+            'name': 'Enterprise',
+            'cost': 'Custom pricing',
+            'prepaid_usage': 'Custom',
+            'compute_unit_pricing': 'Custom',
+            'actor_ram': 'Custom',
+            'max_concurrent_runs': 'Custom',
+            'support_level': 'Service Level Agreement (SLA) with custom contract',
+            'personal_tech_training': 'Custom',
+            'proxy_access': 'Custom'
+          }
+        ]
