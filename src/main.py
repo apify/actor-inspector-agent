@@ -71,8 +71,10 @@ async def main() -> None:
         pricing_check_agent = create_pricing_check_agent(model_name, debug=debug)
         code_quality_task = Task(
             description=(
-                f'Perform a code quality check on the Apify Actor {actor_id}. '
+                f'Perform a code quality check on the Apify Actor: {actor_id}. '
                 f'The code can be found at the following GitHub repository URL: {github_repo_url}. '
+                '!!! IF THE CODE URL IS NOT EXPLICITLY PROVIDED, DO NOT CALL ANY CODE RELATED TOOLS, DO NOT TRY TO COME UP WITH IT OR DO NOT USE ACTOR NAME AS A URL. '
+                'JUST TELL THAT CODE CANNOT BE EVALUATED AND GRADE IT AS "N/A" !!!'
                 'Report for these criteria: '
                 '- Contains tests? Classify as bad if no tests, good if some tests are missing major functionality, great if most important functionality is tested. Provide a brief description explaining the rating, e.g., "Contains tests but only basic, majority of functionality was not tested." \n'
                 '- Is linter enabled? Classify as bad if not enabled, good if partially enabled, great if fully enabled. Provide a brief description explaining the rating, e.g., "Linter is partially enabled, missing configurations for some files." \n'
