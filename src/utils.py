@@ -8,6 +8,18 @@ from src.const import REQUESTS_TIMEOUT_SECS
 APIFY_API_ENDPOINT_GET_DEFAULT_BUILD = 'https://api.apify.com/v2/acts/{actor_id}/builds/default'
 
 
+def get_actor_github_urls(apify_client: ApifyClient, actor_id: str) -> list[str]:
+    github_urls = []
+    build = get_actor_latest_build(apify_client, actor_id)
+    if github_repo_url := build.get('actVersion', {}).get('gitRepoUrl'):
+        github_urls.append(github_repo_url)
+
+    versions = apify_client.actor(actor_id).versions().list().items
+    github_urls.extend(version.get('gitRepoUrl') for version in versions if version.get('gitRepoUrl'))
+
+    return github_urls
+
+
 def get_apify_token() -> str:
     if not (token := os.getenv('APIFY_TOKEN')):
         raise ValueError('APIFY_TOKEN environment variable is not set')
