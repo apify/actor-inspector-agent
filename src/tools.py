@@ -24,7 +24,9 @@ logger = logging.getLogger('apify')
 
 class GetActorReadmeInput(BaseModel):
     """Input schema for GetActorReadme."""
+
     actor_id: str = Field(..., description='The ID of the Apify Actor.')
+
 
 class GetActorReadmeTool(BaseTool):
     name: str = 'get_actor_readme'
@@ -65,7 +67,7 @@ def tool_get_actor_readme(actor_id: str) -> str:
 
 
 @tool
-def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition | None:
+def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition | str:
     """Tool to get the input schema of an Apify Actor.
 
     If the input schema is not found a None value is returned.
@@ -82,13 +84,11 @@ def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition | None:
     apify_client = ApifyClient(token=get_apify_token())
     build = get_actor_latest_build(apify_client, actor_id)
 
-
     if not (actor_definition := build.get('actorDefinition')):
         raise ValueError(f'Actor definition not found in the Actor build for Actor: {actor_id}')
 
     if not (actor_input := actor_definition.get('input')):
-        return None
-        #raise ValueError(f'Input schema not found in the Actor build for Actor: {actor_id}')
+        return 'Actor input schema is not available.'
 
     properties: dict[str, ActorInputProperty] = {}
     for name, prop in actor_input.get('properties', {}).items():
@@ -107,48 +107,12 @@ def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition | None:
 UITHUB_LINK = 'https://uithub.com/{repo_path}?accept=application/json&maxTokens={max_tokens}'
 
 
-#@tool
-#def tool_get_github_repo_context(repository_url: str, max_tokens: int = 120_000) -> GithubRepoContext:
-#    """Tool to get the context of a GitHub repository.
-#
-#    Args:
-#        repo_url (str): The URL of the GitHub repository for example https://github.com/user/repository
-#    """
-#    repo_path = repository_url.split('github.com/')[-1].replace('.git', '')
-#    print("tool getting", repo_path)
-#
-#    url = UITHUB_LINK.format(repo_path=repo_path, max_tokens=max_tokens)
-#    response = requests.get(url, timeout=REQUESTS_TIMEOUT_SECS)
-#
-#    data = response.json()
-#    tree = data['tree']
-#    files: list[GithubRepoFile] = []
-#
-#    for name, file in data.get('files', {}).items():
-#        if any(
-#            substring in name.lower()
-#            for substring in [
-#                'license',
-#                'package-lock.json',
-#                'yarn.lock',
-#                'readme.md',
-#                'poetry.lock',
-#                'requirements.txt',
-#                'setup.py',
-#                'uv.lock',
-#            ]
-#        ):
-#            continue
-#        if file['type'] != 'content':
-#            continue
-#        files.append(GithubRepoFile(name=name, content=file['content']))
-#
-#    return GithubRepoContext(tree=tree, files=files)
-
 class GetGithubRepoContextInput(BaseModel):
     """Input schema for GetGithubRepoContext."""
+
     repository_url: str = Field(..., description='The URL of the GitHub repository')
     max_tokens: int = Field(120_000, description='Maximum number of tokens to retrieve')
+
 
 class GetGithubRepoContextTool(BaseTool):
     name: str = 'get_github_repo_context'
