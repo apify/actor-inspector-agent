@@ -38,10 +38,37 @@ Agent Actor Inspector is an Apify Actor designed to evaluate and rate other Apif
   - Check pricing (competitiveness, pricing model, hidden costs).
 - Aggregates results from all tasks to produce a final quality report.
 
-![Agent Actor Inspector](https://raw.githubusercontent.com/apify/agent-actor-inspector/refs/heads/master/docs/agent_actor_inspector.png)
+![Agent Actor Inspector](https://raw.githubusercontent.com/apify/agent-actor-inspector/refs/heads/main/docs/agent_actor_inspector.png)
 
 ## Input
 
 The Actor requires the following input configuration:
 
 - `actorId` :  Actor ID to be evaluated.
+
+## Output
+
+Sample Actor output for evaluation of [Website Content Crawler](https://apify.com/apify/website-content-crawler) Actor:
+```
+**Final Overall Inspection Report for Apify Actor: apify/website-content-crawler**
+
+- **Code Quality:**
+  - Rating: Unknown (Based on best practices).
+  - Description: While direct analysis was unavailable, the actor is expected to follow best practices, ensuring organized, efficient, and secure code.
+
+- **Actor Quality:**
+  - Rating: Great
+  - Description: The actor exhibits excellent documentation, with comprehensive guidance, use case examples, detailed input properties, and a user-friendly design that aligns with best practices.
+
+- **Actor Uniqueness:**
+  - Rating: Good
+  - Description: Although there are similar actors, its unique design for LLM integration and enhanced HTML processing options provide it with a distinct niche.
+
+- **Pricing:**
+  - Rating: Good
+  - Description: The flexible PAY_PER_PLATFORM_USAGE model offers potential cost-effectiveness, particularly for large-scale operations, compared to fixed models.
+
+**Overall Final Mark: Great**
+
+The "apify/website-content-crawler" stands out with its combination of quality documentation, unique features tailored for modern AI applications, and competitive pricing strategy, earning it a "Great" overall assessment. While information on code quality couldn't be directly assessed, the actor's thought-out documentation and broad feature set suggest adherence to high standards.
+```

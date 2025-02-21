@@ -175,7 +175,6 @@ async def main() -> None:
             {
                 'actorId': actor_id,
                 'response': raw_response,
-                'structured_response': response.dict() if response else {},
             }
         )
         Actor.log.info('Pushed the data into the dataset!')
