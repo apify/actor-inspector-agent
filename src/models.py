@@ -18,15 +18,20 @@ config_to_camel = ConfigDict(
     from_attributes=True,
 )
 
+
 class FinalTaskSection(BaseModel):
     """Pydantic model for each section evaluated for the final task."""
+
     section: str = Field(..., description='The section title. For example "Code Quality" or "Uniqueness".')
     grade: str = Field(..., description='The grade of the section. One of "BAD", "GOOD", "GREAT" or "N/A".')
     reason: str = Field(..., description='The reason for the grade. For example, "The code quality is excellent".')
 
+
 class FinalTaskOutput(BaseModel):
     """Pydantic model for the final task output."""
+
     report: list[FinalTaskSection] = Field(..., description='The list of sections evaluated for the final task.')
+
 
 class CodeQualityOutput(BaseModel):
     contains_tests: bool
@@ -35,6 +40,7 @@ class CodeQualityOutput(BaseModel):
     security_vulnerabilities: bool
     performance_issues: bool
     code_style_issues: bool
+
 
 class GithubRepoFile(BaseModel):
     """
@@ -91,12 +97,15 @@ class ActorInputDefinition(BaseModel):
     description: str
     properties: dict[str, ActorInputProperty]
 
+
 class Stats(BaseModel):
     """Actor statistics total runs, users"""
+
     total_runs: int | None = None
     total_users30_days: int | None = None
     public_actor_run_stats30_days: dict = None
     model_config = config_to_camel
+
 
 # Nested model for 'pricingInfos'
 class ActorChargeEvent(BaseModel):
@@ -105,12 +114,15 @@ class ActorChargeEvent(BaseModel):
     event_title: str
     model_config = config_to_camel
 
+
 class PricingPerEvent(BaseModel):
     actor_charge_events: dict[str, ActorChargeEvent] | None = None
     model_config = config_to_camel
 
+
 class PricingInfo(BaseModel):
     """Pricing information: Pay per usage, Pay per results, Pay per event."""
+
     pricing_model: str
     price_per_unit_usd: float | None = None
     trial_minutes: int | None = None
@@ -119,8 +131,10 @@ class PricingInfo(BaseModel):
     pricing_per_event: PricingPerEvent | None = None
     model_config = config_to_camel
 
+
 class ActorStore(BaseModel):
-    """ Actor Store List Pydantic model."""
+    """Actor Store List Pydantic model."""
+
     name: str
     username: str
     title: str
@@ -131,6 +145,8 @@ class ActorStore(BaseModel):
     total_stars: int | None = None
     model_config = config_to_camel
 
+
 class ActorStoreList(RootModel):
-    """ Actor Store List Pydantic model."""
+    """Actor Store List Pydantic model."""
+
     root: list[ActorStore]

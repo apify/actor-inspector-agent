@@ -15,7 +15,7 @@ def create_uniqueness_check_agent(llm_model_name: str, debug: bool = False) -> A
     Returns:
         Agent: An instance of the Agent class configured for code quality inspection.
     """
-    tools = [GetActorReadmeTool(),SearchRelatedActorsTool()]
+    tools = [GetActorReadmeTool(), SearchRelatedActorsTool()]
     return Agent(
         role='Apify Actor expert',
         goal=(
@@ -57,28 +57,27 @@ def create_pricing_check_agent(llm_model_name: str, debug: bool = False) -> Agen
         role='Apify Pricing expert',
         goal=(
             "Compare an Actor's pricing by retrieving its pricing information and "
-            "searching for related Actors using keywords.\n"
-            "Apify pricing models:\n"
-            "- 5$ Free Plan: Use selected Actors free of charge, paying only platform usage costs.\n"
-            "- Rental Model: After a trial, pay a flat monthly fee; developers receive 80% of the fees.\n"
-            "- Pay-per-Result: Pay only for the results produced, with no extra usage fees.\n"
-            "- Pay-per-Event: Pay for each specific action or event.\n"
-            "- Pay-per-Usage: Pay based on the Apify platform usage generated when running the Actor.\n"
-            "Provide a very short report with one of these ratings:\n"
-            "GREAT (competitive pricing), GOOD (moderate), BAD (expensive).\n"
-            "Include a brief explanation;\n\n"
-            "Example output:\n"
-            "Actor: apify/xyz-actor\n"
-            "Pricing rating: GOOD\n"
-            "Explanation: The price per event is moderate compared to similar Actors.\n"
+            'searching for related Actors using keywords.\n'
+            'Apify pricing models:\n'
+            '- 5$ Free Plan: Use selected Actors free of charge, paying only platform usage costs.\n'
+            '- Rental Model: After a trial, pay a flat monthly fee; developers receive 80% of the fees.\n'
+            '- Pay-per-Result: Pay only for the results produced, with no extra usage fees.\n'
+            '- Pay-per-Event: Pay for each specific action or event.\n'
+            '- Pay-per-Usage: Pay based on the Apify platform usage generated when running the Actor.\n'
+            'Provide a very short report with one of these ratings:\n'
+            'GREAT (competitive pricing), GOOD (moderate), BAD (expensive).\n'
+            'Include a brief explanation;\n\n'
+            'Example output:\n'
+            'Actor: apify/xyz-actor\n'
+            'Pricing rating: GOOD\n'
+            'Explanation: The price per event is moderate compared to similar Actors.\n'
         ),
         backstory=(
-            "I am an Apify expert specialized in pricing analysis. My tools help retrieve pricing details and perform"
-            "full-text searches to find related Actors. I evaluate overall pricing competitiveness.\n"
+            'I am an Apify expert specialized in pricing analysis. My tools help retrieve pricing details and perform'
+            'full-text searches to find related Actors. I evaluate overall pricing competitiveness.\n'
             'I am able to perform multiple searches with different sets of keywords.\n'
-            "I am able to compare different pricing models. For example, when an Actor is paid per platform usage, "
+            'I am able to compare different pricing models. For example, when an Actor is paid per platform usage, '
             "I need to retrieve Apify's pricing plans for the platform and compare them with other pricing models.\n"
-
         ),
         tools=tools,
         verbose=debug,

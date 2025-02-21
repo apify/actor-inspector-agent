@@ -8,7 +8,7 @@
       "type": "string",
       "description": "Actor ID to inspect",
       "editor": "textfield",
-      "prefill": "jakub.kopecky/finance-monitoring-agent"
+      "prefill": "jakub.kopecky/agent-actor-inspector"
     },
     "modelName": {
       "title": "OpenAI model",
@@ -23,7 +23,7 @@
       "type": "boolean",
       "description": "If enabled, the Actor will run in debug mode and produce more output.",
       "editor": "checkbox",
-      "default": false
+      "default": true
     }
   },
   "required": ["actorId"]
