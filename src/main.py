@@ -16,6 +16,7 @@ from crewai import Crew, Process, Task
 
 from src.agents import create_actor_inspector_agent, create_code_quality_agent, create_actor_quality_agent
 from src.agents2 import create_pricing_check_agent, create_uniqueness_check_agent
+from src.models import FinalTaskOutput
 from src.ppe_utils import charge_for_actor_start
 from src.utils import get_actor_latest_build, get_apify_token
 
@@ -54,6 +55,13 @@ async def main() -> None:
         build = get_actor_latest_build(apify_client, actor_id)
         github_repo_url = build.get('actVersion', {}).get('gitRepoUrl')
 
+        if not github_repo_url:
+            github_repo_url = "GITHUB REPO URL IS NOT PROVIDED, SKIP ALL CHEKS AND TOOLS THAT REQUIRE IT."
+            code_quality_remark = "IF THE GITHUB REPO URL IS NOT PROVIDED, GRADE THE CODE QUALITY AS 'N/A'."
+        else:
+            code_quality_remark = ""
+
+
         print(github_repo_url)
 
         inspector_agent = create_actor_inspector_agent(model_name)
@@ -64,7 +72,7 @@ async def main() -> None:
         code_quality_task = Task(
             description=(
                 f'Perform a code quality check on the Apify Actor {actor_id}. '
-                f'The code can be found at the following GitHub repository URL: {github_repo_url if github_repo_url else "N/A"}. '
+                f'The code can be found at the following GitHub repository URL: {github_repo_url}. '
                 'Report for these criteria: '
                 '- Contains tests? Classify as bad if no tests, good if some tests are missing major functionality, great if most important functionality is tested. Provide a brief description explaining the rating, e.g., "Contains tests but only basic, majority of functionality was not tested." \n'
                 '- Is linter enabled? Classify as bad if not enabled, good if partially enabled, great if fully enabled. Provide a brief description explaining the rating, e.g., "Linter is partially enabled, missing configurations for some files." \n'
@@ -72,6 +80,7 @@ async def main() -> None:
                 '- Are there any security vulnerabilities? Classify as bad if many vulnerabilities, good if some vulnerabilities, great if no vulnerabilities. Provide a brief description explaining the rating, e.g., "Multiple dependencies with known vulnerabilities." \n'
                 '- Are there any performance issues visible in the code? Classify as bad if many issues, good if some issues, great if no issues. Provide a brief description explaining the rating, e.g., "Several inefficient loops detected." \n'
                 '- Are there any code style issues? Classify as bad if many issues, good if some issues, great if no issues. Provide a brief description explaining the rating, e.g., "Inconsistent naming conventions used." \n'
+                f'{code_quality_remark}'
             ),
             expected_output='A detailed report on the code quality, including any issues found and suggestions for improvement.',
             agent=code_quality_agent,
@@ -127,6 +136,7 @@ async def main() -> None:
             ),
             expected_output='A final overall inspection report summarizing the findings from the previous tasks and providing a final mark for the actor.',
             context=[code_quality_task, actor_quality_task, uniqueness_task, pricing_task],
+            #output_pydantic=FinalTaskOutput,
             agent=inspector_agent,
         )
 
@@ -152,7 +162,7 @@ async def main() -> None:
         raw_response = crew_output.raw
         Actor.log.debug(raw_response)
 
-        response = None
+        response = crew_output.pydantic
 
         total_tokens = crew_output.token_usage.total_tokens
         Actor.log.debug(total_tokens)

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, RootModel
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 from pydantic.alias_generators import to_camel
 
 config_to_camel = ConfigDict(
@@ -18,6 +18,15 @@ config_to_camel = ConfigDict(
     from_attributes=True,
 )
 
+class FinalTaskSection(BaseModel):
+    """Pydantic model for each section evaluated for the final task."""
+    section: str = Field(..., description='The section title. For example "Code Quality" or "Uniqueness".')
+    grade: str = Field(..., description='The grade of the section. One of "BAD", "GOOD", "GREAT" or "N/A".')
+    reason: str = Field(..., description='The reason for the grade. For example, "The code quality is excellent".')
+
+class FinalTaskOutput(BaseModel):
+    """Pydantic model for the final task output."""
+    report: list[FinalTaskSection] = Field(..., description='The list of sections evaluated for the final task.')
 
 class CodeQualityOutput(BaseModel):
     contains_tests: bool
@@ -125,4 +134,3 @@ class ActorStore(BaseModel):
 class ActorStoreList(RootModel):
     """ Actor Store List Pydantic model."""
     root: list[ActorStore]
-
