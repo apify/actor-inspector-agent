@@ -119,7 +119,14 @@ class GetGithubRepoContextTool(BaseTool):
     description: str = 'Fetch the context of the specified GitHub repository.'
     args_schema: type[BaseModel] = GetGithubRepoContextInput
 
-    def _run(self, repository_url: str, max_tokens: int = 120_000) -> GithubRepoContext:
+    def _run(self, repository_url: str, max_tokens: int = 120_000) -> GithubRepoContext | str:
+        verify_response = requests.get(repository_url, timeout=REQUESTS_TIMEOUT_SECS)
+        if verify_response.status_code == 404:
+            return (
+                f"Repository {repository_url} does not exist. Code is not available. "
+                "Skip the tool and grade the code as N/A."
+            )
+
         repo_path = repository_url.split('github.com/')[-1].replace('.git', '')
 
         url = UITHUB_LINK.format(repo_path=repo_path, max_tokens=max_tokens)

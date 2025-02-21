@@ -53,12 +53,6 @@ async def main() -> None:
         build = get_actor_latest_build(apify_client, actor_id)
         github_repo_url = build.get('actVersion', {}).get('gitRepoUrl')
 
-        if not github_repo_url:
-            github_repo_url = 'GITHUB REPO URL IS NOT PROVIDED, SKIP ALL CHEKS AND TOOLS THAT REQUIRE IT.'
-            code_quality_remark = "IF THE GITHUB REPO URL IS NOT PROVIDED, GRADE THE CODE QUALITY AS 'N/A'."
-        else:
-            code_quality_remark = ''
-
         Actor.log.debug('Github repo URL: %s', github_repo_url)
 
         inspector_agent = create_actor_inspector_agent(model_name)
@@ -66,124 +60,99 @@ async def main() -> None:
         actor_quality_agent = create_actor_quality_agent(model_name, debug=debug)
         uniqueness_check_agent = create_uniqueness_check_agent(model_name, debug=debug)
         pricing_check_agent = create_pricing_check_agent(model_name, debug=debug)
+
         code_quality_task = Task(
             description=(
-                f'Perform a code quality check on the Apify Actor: {actor_id}. '
-                f'The code can be found at the following GitHub repository URL: {github_repo_url}. '
-                '!!! IF THE CODE URL IS NOT EXPLICITLY PROVIDED, DO NOT CALL ANY CODE RELATED'
-                ' TOOLS, DO NOT TRY TO COME UP WITH IT OR DO NOT USE ACTOR NAME AS A URL. '
-                'JUST TELL THAT CODE CANNOT BE EVALUATED AND GRADE IT AS "N/A" !!!'
-                'Report for these criteria: '
-                '- Contains tests? Classify as bad if no tests, good if some tests are missing '
-                'major functionality, great if most important functionality is tested. '
-                'Provide a brief description explaining the rating, '
-                'e.g., "Contains tests but only basic, majority of functionality was not tested." \n'
-                '- Is linter enabled? Classify as bad if not enabled, good if partially '
-                'enabled, great if fully enabled. Provide a brief description explaining the '
-                'rating, e.g., "Linter is partially enabled, missing configurations for some files." \n'
-                '- Are there any code smells? Classify as bad if many code smells, good '
-                'if some code smells, great if no code smells. Provide a brief description '
-                'explaining the rating, e.g., "Several instances of duplicate code found." \n'
-                '- Are there any security vulnerabilities? Classify as bad if many '
-                'vulnerabilities, good if some vulnerabilities, great if no vulnerabilities. '
-                'Provide a brief description explaining the rating, e.g., '
-                '"Multiple dependencies with known vulnerabilities." \n'
-                '- Are there any performance issues visible in the code? '
-                'Classify as bad if many issues, good if some issues, great if no issues. '
-                'Provide a brief description explaining the rating, e.g., '
-                '"Several inefficient loops detected." \n'
-                '- Are there any code style issues? Classify as bad if many issues, '
-                'good if some issues, great if no issues. Provide a brief description '
-                'explaining the rating, e.g., "Inconsistent naming conventions used." \n'
-                f'{code_quality_remark}'
+                f"Analyze the code quality of the Apify Actor '{actor_id}' using the GitHub repository at: {github_repo_url}. "
+                "If the GitHub URL is not provided, skip all code-related tools and explicitly state that the code cannot be evaluated, assigning an 'N/A' grade. "
+                "Evaluate the following criteria:\n"
+                "- **Tests**: Are tests present? Rate as 'bad' (no tests), 'good' (some tests, missing major functionality), or 'great' (most key functionality tested). Explain briefly.\n"
+                "- **Linter**: Is a linter enabled? Rate as 'bad' (not enabled), 'good' (partially enabled), or 'great' (fully enabled). Explain briefly.\n"
+                "- **Code Smells**: Are there code smells (e.g., duplication)? Rate as 'bad' (many), 'good' (some), or 'great' (none). Explain briefly.\n"
+                "- **Security**: Are there visible security vulnerabilities (e.g., outdated dependencies)? Rate as 'bad' (many), 'good' (some), or 'great' (none). Explain briefly.\n"
+                "- **Performance**: Are there performance issues (e.g., inefficient loops)? Rate as 'bad' (many), 'good' (some), or 'great' (none). Explain briefly.\n"
+                "- **Style**: Are there code style issues (e.g., inconsistent naming)? Rate as 'bad' (many), 'good' (some), or 'great' (none). Explain briefly.\n"
             ),
             expected_output=(
-                'A detailed report on the code quality, including any issues found and suggestions for improvement.'
+                "A structured report in markdown format with:\n"
+                "- A section for each criterion (Tests, Linter, Code Smells, Security, Performance, Style).\n"
+                "- Each section includes a rating ('bad', 'good', 'great' or 'N/A' if no URL) and a 1-2 sentence explanation.\n"
+                "- A brief overall summary (2-3 sentences) with suggestions for improvement if applicable."
             ),
             agent=code_quality_agent,
         )
+
         actor_quality_task = Task(
             description=(
-                f'Perform an actor quality check on the Apify Actor {actor_id}. '
-                f'The code is at: {github_repo_url}. Report for these criteria:\n'
-                '- Is the README well-defined? Classify as bad if not well-defined, '
-                'good if partially well-defined, great if fully well-defined. '
-                'Explain the rating, e.g., "README is partially well-defined, '
-                'missing usage examples."\n'
-                '- Are input properties well-defined and sensible? Classify as bad '
-                'if not well-defined, good if partially well-defined, great if '
-                'fully well-defined. Explain the rating, e.g., "Input properties '
-                'are partially well-defined, some lack descriptions."\n'
-                '- Is the actor easy to follow and use from the README? Classify as '
-                'bad if not easy, good if somewhat easy, great if very easy. Explain '
-                'the rating, e.g., "README is somewhat easy to follow, but lacks '
-                'detailed usage instructions."\n'
-                '- Are use examples provided? Classify as bad if none, good if some, '
-                'great if comprehensive. Explain the rating, e.g., "README has some '
-                'examples, but they are not comprehensive."\n'
-                '- Is the GitHub link provided in the README? Classify as bad if no '
-                'link, good if provided but not prominent, great if prominent. '
-                'Explain the rating, e.g., "GitHub link is provided but not prominent."\n'
+                f"Assess the quality of the Apify Actor '{actor_id}' based on its documentation and usability, using the GitHub repository at: {github_repo_url}. "
+                "Evaluate the following criteria:\n"
+                "- **README Clarity**: Is the README well-defined? Rate as 'bad' (poorly defined), 'good' (partially clear), or 'great' (fully detailed). Explain briefly.\n"
+                "- **Input Properties**: Are input properties clear and logical? Rate as 'bad' (unclear), 'good' (partially clear), or 'great' (well-defined). Explain briefly.\n"
+                "- **Usability**: Is the actor easy to use based on the README? Rate as 'bad' (confusing), 'good' (somewhat clear), or 'great' (very intuitive). Explain briefly.\n"
+                "- **Examples**: Are usage examples provided? Rate as 'bad' (none), 'good' (some), or 'great' (comprehensive). Explain briefly.\n"
+                "- **GitHub Link**: Is the GitHub link in the README? Rate as 'bad' (missing), 'good' (present but not prominent), or 'great' (clearly visible). Explain briefly."
             ),
-            expected_output='A detailed report on the actor quality, including issues '
-            'found and suggestions for improvement.',
+            expected_output=(
+                "A structured report in markdown format with:\n"
+                "- A section for each criterion (README Clarity, Input Properties, Usability, Examples, GitHub Link).\n"
+                "- Each section includes a rating ('bad', 'good', 'great') and a 1-2 sentence explanation.\n"
+                "- A brief overall summary (2-3 sentences) with suggestions for improvement."
+            ),
             agent=actor_quality_agent,
         )
+
         uniqueness_task = Task(
             description=(
-                f'Perform an actor uniqueness check on the Apify Actor {actor_id}. '
-                f'The code is at: {github_repo_url}. Report for these criteria:\n'
-                '- Is the actor unique compared to similar actors? Classify as bad '
-                'if very similar, good if somewhat similar, great if unique. Explain '
-                'the rating, e.g., "Actor has unique features not found in others."\n'
-                '- Does the actor offer unique functionality? Classify as bad if none, '
-                'good if some, great if highly unique. Explain the rating, e.g., '
-                '"Actor offers unique data extraction methods not found elsewhere."\n'
-                '- Are there unique selling points? Classify as bad if none, good if '
-                'some, great if multiple. Explain the rating, e.g., "Actor has multiple '
-                'unique selling points like advanced data processing."\n'
+                f"Evaluate the uniqueness of the Apify Actor '{actor_id}' compared to similar actors, using the GitHub repository at: {github_repo_url}. "
+                "Assess the following criteria:\n"
+                "- **Comparison**: Is the actor unique compared to peers? Rate as 'bad' (very similar), 'good' (somewhat unique), or 'great' (highly distinct). Explain briefly.\n"
+                "- **Functionality**: Does it offer unique features? Rate as 'bad' (none), 'good' (some), or 'great' (highly unique). Explain briefly.\n"
+                "- **Selling Points**: Are there standout selling points? Rate as 'bad' (none), 'good' (some), or 'great' (multiple). Explain briefly."
             ),
-            expected_output='A detailed report on actor uniqueness, including unique '
-            'features and improvement suggestions.',
+            expected_output=(
+                "A structured report in markdown format with:\n"
+                "- A section for each criterion (Comparison, Functionality, Selling Points).\n"
+                "- Each section includes a rating ('bad', 'good', 'great') and a 1-2 sentence explanation.\n"
+                "- A brief overall summary (2-3 sentences) highlighting unique aspects and improvement ideas."
+            ),
             agent=uniqueness_check_agent,
         )
 
         pricing_task = Task(
             description=(
-                f'Perform a pricing check on the Apify Actor {actor_id}. '
-                f'The code is at: {github_repo_url}. Report for these criteria:\n'
-                '- Is pricing competitive compared to similar actors? Classify as bad '
-                'if expensive, good if moderate, great if competitive. Explain the '
-                'rating, e.g., "Pricing is competitive for the functionality offered."\n'
-                '- Does the pricing model make sense for the functionality? Classify '
-                'as bad if not sensible, good if somewhat sensible, great if very '
-                'sensible. Explain the rating, e.g., "Pricing is very sensible given '
-                'the advanced features."\n'
-                '- Are there hidden costs or fees? Classify as bad if many, good if '
-                'some, great if none. Explain the rating, e.g., "No hidden costs, all '
-                'fees are transparent."\n'
+                f"Analyze the pricing of the Apify Actor '{actor_id}' for competitiveness and sensibility, using the GitHub repository at: {github_repo_url}. "
+                "Evaluate the following criteria:\n"
+                "- **Competitiveness**: Is pricing competitive with similar actors? Rate as 'bad' (expensive), 'good' (moderate), or 'great' (highly competitive). Explain briefly.\n"
+                "- **Sensibility**: Does the pricing align with functionality? Rate as 'bad' (not sensible), 'good' (somewhat sensible), or 'great' (very sensible). Explain briefly.\n"
+                "- **Transparency**: Are there hidden costs? Rate as 'bad' (many), 'good' (some), or 'great' (none). Explain briefly."
             ),
-            expected_output='A detailed report on actor pricing, including issues found and improvement suggestions.',
+            expected_output=(
+                "A structured report in markdown format with:\n"
+                "- A section for each criterion (Competitiveness, Sensibility, Transparency).\n"
+                "- Each section includes a rating ('bad', 'good', 'great') and a 1-2 sentence explanation.\n"
+                "- A brief overall summary (2-3 sentences) with pricing improvement suggestions."
+            ),
             agent=pricing_check_agent,
         )
 
         final_task = Task(
             description=(
-                f'Perform a final quality check on the Apify Actor {actor_id}. '
-                f'The code is at: {github_repo_url}. Summarize previous task findings '
-                'and provide a final mark:\n'
-                '- Code Quality: Summarize findings and classify as bad, good, or '
-                'great. Explain the rating.\n'
-                '- Actor Quality: Summarize findings and classify as bad, good, or '
-                'great. Explain the rating.\n'
-                '- Actor Uniqueness: Summarize findings and classify as bad, good, '
-                'or great. Explain the rating.\n'
-                '- Pricing: Summarize findings and classify as bad, good, or great. '
-                'Explain the rating.\n'
-                'Provide an overall mark: bad, good, or great, with a brief summary.'
+                f"Compile a final quality assessment for the Apify Actor '{actor_id}' using the GitHub repository at: {github_repo_url}. "
+                "Include the actor name and a brief summary of its purpose. "
+                "Summarize findings from previous tasks and assign an overall rating:\n"
+                "- **Code Quality**: Summarize code quality findings. Rate as 'bad', 'good', or 'great'. Explain in 1-2 sentences.\n"
+                "- **Actor Quality**: Summarize actor quality findings. Rate as 'bad', 'good', or 'great'. Explain in 1-2 sentences.\n"
+                "- **Uniqueness**: Summarize uniqueness findings. Rate as 'bad', 'good', or 'great'. Explain in 1-2 sentences.\n"
+                "- **Pricing**: Summarize pricing findings. Rate as 'bad', 'good', or 'great'. Explain in 1-2 sentences.\n"
+                "- **Overall**: Provide a final rating ('bad', 'good', 'great') with a 2-3 sentence justification."
             ),
-            expected_output='A final report summarizing previous task findings and '
-            'providing an overall mark for the actor.',
+            expected_output=(
+                "A concise final report in markdown format with:\n"
+                "- A header section including the Actor Name and a brief Summary of what the actor does (2-3 sentences).\n"
+                "- A section for each category (Code Quality, Actor Quality, Uniqueness, Pricing, Overall).\n"
+                "- Each section includes a rating ('bad', 'good', 'great') and a 1-2 sentence explanation.\n"
+                "- The Overall section provides a final rating and a 2-3 sentence summary."
+            ),
             context=[code_quality_task, actor_quality_task, uniqueness_task, pricing_task],
             agent=inspector_agent,
         )
