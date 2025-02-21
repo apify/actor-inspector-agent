@@ -1,4 +1,6 @@
-# Agent Actor Inspector (With heavy use of chatgpt)
+# Agent Actor Inspector
+
+[![Agent Actor Inspector](https://apify.com/actor-badge?actor=jakub.kopecky/agent-actor-inspector)](https://apify.com/jakub.kopecky/agent-actor-inspector)
 
 Agent Actor Inspector is an Apify Actor designed to evaluate and rate other Apify Actors based on criteria such as documentation quality, input clarity, code standards, functionality, performance, and uniqueness.
 
@@ -26,8 +28,20 @@ Agent Actor Inspector is an Apify Actor designed to evaluate and rate other Apif
 2. **Run**: Execute the Actor to start the evaluation process.
 3. **Review results**: Once completed, access the output to review the evaluation summaries.
 
+## How does Agent Actor Inspector works?
+
+- Initializes agents
+- Sets up tasks to:
+  - Check code quality (tests, linter, code smells, security, performance, style).
+  - Check actor quality (README content, input definitions, usability, examples, repository link).
+  - Check uniqueness (distinctiveness and unique features).
+  - Check pricing (competitiveness, pricing model, hidden costs).
+- Aggregates results from all tasks to produce a final quality report.
+
+![Agent Actor Inspector](https://raw.githubusercontent.com/apify/agent-actor-inspector/refs/heads/master/docs/agent_actor_inspector.png)
+
 ## Input
 
 The Actor requires the following input configuration:
 
-- `actorId` (array): List of URLs pointing to the Apify Actors to be evaluated.
+- `actorId` :  Actor ID to be evaluated.
