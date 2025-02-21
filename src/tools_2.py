@@ -79,3 +79,82 @@ class GetActorPricingInfoTool(BaseTool):
             current_pricing = pricing_entry
 
         return PricingInfo.model_validate(current_pricing)
+
+
+class GetApifyPlatformPricing(BaseTool):
+    name: str = 'get_apify_platform_pricing_per_usage'
+    description: str = 'Get pricing plans for Apify Platform for pay per platform usage.'
+
+    def _run(self) -> list[dict]:
+        logger.info('Getting pricing information of Apify')
+        return [
+          {
+            'name': 'Free',
+            'cost': '$0 per month',
+            'prepaid_usage': '$5',
+            'compute_unit_pricing': '$0.4 per CU',
+            'actor_ram': '8 GB',
+            'max_concurrent_runs': 25,
+            'support_level': 'Community support',
+            'proxy_access': {
+              'residential_proxies': '$8 per GB',
+              'datacenter_proxies': '5 IPs included',
+              'serps_proxy': '$2.5 per 1,000 SERPs'
+            }
+          },
+          {
+            'name': 'Starter',
+            'cost': '$49 per month',
+            'prepaid_usage': '$49',
+            'compute_unit_pricing': '$0.4 per CU',
+            'actor_ram': '32 GB',
+            'max_concurrent_runs': 32,
+            'support_level': 'Chat support',
+            'proxy_access': {
+              'residential_proxies': '$8 per GB',
+              'datacenter_proxies': '30 IPs included; additional IPs at $1 per IP',
+              'serps_proxy': '$2.5 per 1,000 SERPs'
+            }
+          },
+          {
+            'name': 'Scale',
+            'cost': '$199 per month',
+            'prepaid_usage': '$199',
+            'compute_unit_pricing': '$0.3 per CU',
+            'actor_ram': '128 GB',
+            'max_concurrent_runs': 128,
+            'support_level': 'Priority chat support',
+            'personal_tech_training': '1 hour per quarter',
+            'proxy_access': {
+              'residential_proxies': '$7.5 per GB',
+              'datacenter_proxies': '200 IPs included; additional IPs at $0.8 per IP',
+              'serps_proxy': '$2 per 1,000 SERPs'
+            }
+          },
+          {
+            'name': 'Business',
+            'cost': '$999 per month',
+            'prepaid_usage': '$999',
+            'compute_unit_pricing': '$0.25 per CU',
+            'actor_ram': '256 GB',
+            'max_concurrent_runs': 256,
+            'support_level': 'Dedicated account manager',
+            'personal_tech_training': '1 hour per month',
+            'proxy_access': {
+              'residential_proxies': '$7 per GB',
+              'datacenter_proxies': '500 IPs included; additional IPs at $0.6 per IP',
+              'serps_proxy': '$1.7 per 1,000 SERPs'
+            }
+          },
+          {
+            'name': 'Enterprise',
+            'cost': 'Custom pricing',
+            'prepaid_usage': 'Custom',
+            'compute_unit_pricing': 'Custom',
+            'actor_ram': 'Custom',
+            'max_concurrent_runs': 'Custom',
+            'support_level': 'Service Level Agreement (SLA) with custom contract',
+            'personal_tech_training': 'Custom',
+            'proxy_access': 'Custom'
+          }
+        ]

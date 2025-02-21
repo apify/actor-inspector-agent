@@ -14,7 +14,7 @@ from apify import Actor
 from crewai import Crew, Process, Task
 
 from src.agents import create_actor_inspector_agent
-from src.agents2 import create_pricing_check_agent, create_uniqueness_check_agent
+from src.agents2 import create_pricing_check_agent
 from src.ppe_utils import charge_for_actor_start
 
 fallback_input = {
@@ -76,6 +76,7 @@ async def main() -> None:
                     expected_output='A helpful response to the user query.',
                     #output_pydantic=
                 )
+
             ],
             manager_agent=inspector_agent,
             process=Process.hierarchical,

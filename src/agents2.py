@@ -32,7 +32,7 @@ def create_uniqueness_check_agent(llm_model_name: str, debug: bool = False) -> A
         backstory=(
             'I am an Apify expert familiar with the platform and its Actors.\n'
             'My tools include retrieving Actor README and performing full-text searches to find related Actors.\n'
-            'I need to execute search multiple times with different sets of keywords.'
+            'I need to execute search multiple times with different sets of keywords.\n'
             'I need to gather at least a couple of related Actors to provide a good comparison.'
         ),
         tools=tools,
@@ -63,7 +63,7 @@ def create_pricing_check_agent(llm_model_name: str, debug: bool = False) -> Agen
             "- Rental Model: After a trial, pay a flat monthly fee; developers receive 80% of the fees.\n"
             "- Pay-per-Result: Pay only for the results produced, with no extra usage fees.\n"
             "- Pay-per-Event: Pay for each specific action or event.\n"
-            "- Pay-per-Usage: Pay based on the platform usage generated when running the Actor.\n"
+            "- Pay-per-Usage: Pay based on the Apify platform usage generated when running the Actor.\n"
             "Provide a very short report with one of these ratings:\n"
             "GREAT (competitive pricing), GOOD (moderate), BAD (expensive).\n"
             "Include a brief explanation;\n\n"
@@ -73,8 +73,12 @@ def create_pricing_check_agent(llm_model_name: str, debug: bool = False) -> Agen
             "Explanation: The price per event is moderate compared to similar Actors.\n"
         ),
         backstory=(
-            'I am an Apify expert specialized in pricing analysis. My tools help retrieve pricing details and '
-            'perform full-text searches to find related Actors. I evaluate overall pricing competitiveness.'
+            "I am an Apify expert specialized in pricing analysis. My tools help retrieve pricing details and perform"
+            "full-text searches to find related Actors. I evaluate overall pricing competitiveness.\n"
+            'I am able to perform multiple searches with different sets of keywords.\n'
+            "I am able to compare different pricing models. For example, when an Actor is paid per platform usage, "
+            "I need to retrieve Apify's pricing plans for the platform and compare them with other pricing models.\n"
+
         ),
         tools=tools,
         verbose=debug,
