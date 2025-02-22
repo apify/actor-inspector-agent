@@ -50,7 +50,7 @@ async def main() -> None:
         if not actor_name:
             raise ValueError('Missing the "actorName" attribute in the input!')
 
-        inspector_agent = create_actor_inspector_agent(model_name)
+        inspector_agent = create_actor_inspector_agent(model_name, debug=debug)
         code_quality_agent = create_code_quality_agent(model_name, debug=debug)
         actor_quality_agent = create_actor_definition_quality_agent(model_name, debug=debug)
         uniqueness_check_agent = create_uniqueness_check_agent(model_name, debug=debug)
