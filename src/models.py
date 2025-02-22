@@ -42,7 +42,7 @@ class CodeQualityOutput(BaseModel):
     code_style_issues: bool
 
 
-class GithubRepoFile(BaseModel):
+class CodeFile(BaseModel):
     """
     GithubRepoFile Pydantic model.
 
@@ -55,7 +55,7 @@ class GithubRepoFile(BaseModel):
     content: str
 
 
-class GithubRepoContext(BaseModel):
+class CodeContext(BaseModel):
     """
     GithubRepoContext Pydantic model.
 
@@ -65,7 +65,7 @@ class GithubRepoContext(BaseModel):
     """
 
     tree: dict
-    files: list[GithubRepoFile]
+    files: list[CodeFile]
 
 
 class ActorInputProperty(BaseModel):

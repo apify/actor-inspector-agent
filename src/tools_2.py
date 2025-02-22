@@ -59,7 +59,7 @@ class SearchRelatedActorsTool(BaseTool):
 class GetActorPricingInfoInput(BaseModel):
     """Input schema for GetActorPricingInformation."""
 
-    actor_id: str = Field(..., description='The ID of the Apify Actor.')
+    actor_name: str = Field(..., description='The name of the Apify Actor.')
 
 
 class GetActorPricingInfoTool(BaseTool):
@@ -67,12 +67,12 @@ class GetActorPricingInfoTool(BaseTool):
     description: str = 'Fetch and return the pricing information of an Apify Actor.'
     args_schema: type[BaseModel] = GetActorPricingInfoInput
 
-    def _run(self, actor_id: str) -> PricingInfo | None:
-        logger.info('Getting pricing information for actor %s', actor_id)
+    def _run(self, actor_name: str) -> PricingInfo | None:
+        logger.info('Getting pricing information for actor %s', actor_name)
         apify_client = ApifyClient(token=get_apify_token())
-        actor = apify_client.actor(actor_id).get()
+        actor = apify_client.actor(actor_name).get()
         if not actor:
-            raise ValueError(f'Actor {actor_id} not found.')
+            raise ValueError(f'Actor {actor_name} not found.')
 
         pricing_info = actor.get('pricingInfos')
         if not pricing_info:
