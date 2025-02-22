@@ -1,6 +1,6 @@
 from crewai import Agent
 
-from src.tools import GetActorReadmeTool, GetGithubRepoContextTool, tool_get_actor_input_schema
+from src.tools import GetActorReadmeTool, tool_get_actor_input_schema, tool_get_code_context
 
 
 def create_code_quality_agent(llm: str, debug: bool = False) -> Agent:
@@ -13,7 +13,7 @@ def create_code_quality_agent(llm: str, debug: bool = False) -> Agent:
     Returns:
         Agent: An instance of the Agent class configured for code quality inspection.
     """
-    tools = [GetGithubRepoContextTool()]
+    tools = [tool_get_code_context]
     return Agent(
         role='Code Quality Specialist',
         goal=(
@@ -32,7 +32,7 @@ def create_code_quality_agent(llm: str, debug: bool = False) -> Agent:
     )
 
 
-def create_actor_quality_agent(llm: str, debug: bool = False) -> Agent:
+def create_actor_definition_quality_agent(llm: str, debug: bool = False) -> Agent:
     """
     Create an Agent instance configured for Apify Actor quality inspection.
 
@@ -44,7 +44,7 @@ def create_actor_quality_agent(llm: str, debug: bool = False) -> Agent:
     """
     tools = [tool_get_actor_input_schema, GetActorReadmeTool()]
     return Agent(
-        role='Apify Actor Evaluator',
+        role='Apify Actor Definition Evaluator',
         goal=(
             "Assess the quality of an Apify Actor's documentation and usability by analyzing its README clarity, "
             'input properties, ease of use, example provision, and GitHub link visibility.'

@@ -3,10 +3,10 @@
   "type": "object",
   "schemaVersion": 1,
   "properties": {
-    "actorId": {
-      "title": "actorId",
+    "actorName": {
+      "title": "actorName",
       "type": "string",
-      "description": "Actor ID to inspect",
+      "description": "Name of the Actor to inspect.",
       "editor": "textfield",
       "prefill": "jakub.kopecky/agent-actor-inspector"
     },
@@ -26,5 +26,5 @@
       "default": true
     }
   },
-  "required": ["actorId"]
+  "required": ["actorName"]
 }

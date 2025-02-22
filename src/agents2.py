@@ -17,7 +17,7 @@ def create_uniqueness_check_agent(llm_model_name: str, debug: bool = False) -> A
     """
     tools = [GetActorReadmeTool(), SearchRelatedActorsTool()]
     return Agent(
-        role='Apify Actor expert',
+        role='Apify Actor Uniqueness expert',
         goal=(
             'Compare an Actors functionality and uniqueness by reading its README and '
             'searching related Actors using keywords.\n'

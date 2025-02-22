@@ -16,8 +16,15 @@ from crewai.tools import BaseTool, tool
 from pydantic import BaseModel, Field
 
 from src.const import REQUESTS_TIMEOUT_SECS
-from src.models import ActorInputDefinition, ActorInputProperty, GithubRepoContext, GithubRepoFile
-from src.utils import get_actor_latest_build, get_apify_token
+from src.models import ActorInputDefinition, ActorInputProperty, CodeContext, CodeFile
+from src.utils import (
+    generate_file_tree,
+    get_actor_github_urls,
+    get_actor_latest_build,
+    get_actor_source_files,
+    get_apify_token,
+    github_repo_exists,
+)
 
 logger = logging.getLogger('apify')
 
@@ -25,7 +32,7 @@ logger = logging.getLogger('apify')
 class GetActorReadmeInput(BaseModel):
     """Input schema for GetActorReadme."""
 
-    actor_id: str = Field(..., description='The ID of the Apify Actor.')
+    actor_name: str = Field(..., description='The name of the Apify Actor.')
 
 
 class GetActorReadmeTool(BaseTool):
@@ -33,22 +40,22 @@ class GetActorReadmeTool(BaseTool):
     description: str = 'Fetch the README content of the specified Apify Actor.'
     args_schema: type[BaseModel] = GetActorReadmeInput
 
-    def _run(self, actor_id: str) -> str:
-        logger.info('Getting README for actor %s', actor_id)
+    def _run(self, actor_name: str) -> str:
+        logger.info('Getting README for actor %s', actor_name)
         apify_client = ApifyClient(token=get_apify_token())
-        build = get_actor_latest_build(apify_client, actor_id)
+        build = get_actor_latest_build(apify_client, actor_name)
         readme = build.get('actorDefinition', {}).get('readme')
         if not readme:
-            raise ValueError(f'Failed to get the README for the Actor {actor_id}')
+            raise ValueError(f'Failed to get the README for the Actor {actor_name}')
         return readme
 
 
 @tool
-def tool_get_actor_readme(actor_id: str) -> str:
+def tool_get_actor_readme(actor_name: str) -> str:
     """Tool to get the README of an Apify Actor.
 
     Args:
-        actor_id (str): The ID of the Apify Actor.
+        actor_name (str): The name of the Apify Actor.
 
     Returns:
         str: The README content of the specified Actor.
@@ -56,24 +63,24 @@ def tool_get_actor_readme(actor_id: str) -> str:
     Raises:
         ValueError: If the README for the Actor cannot be retrieved.
     """
-    logger.info('Getting README for actor %s', actor_id)
+    logger.info('Getting README for actor %s', actor_name)
     apify_client = ApifyClient(token=get_apify_token())
-    build = get_actor_latest_build(apify_client, actor_id)
+    build = get_actor_latest_build(apify_client, actor_name)
 
     if not (readme := build.get('actorDefinition', {}).get('readme')):
-        raise ValueError(f'Failed to get the README for the Actor {actor_id}')
+        raise ValueError(f'Failed to get the README for the Actor {actor_name}')
 
     return readme
 
 
 @tool
-def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition | str:
+def tool_get_actor_input_schema(actor_name: str) -> ActorInputDefinition | str:
     """Tool to get the input schema of an Apify Actor.
 
     If the input schema is not found a None value is returned.
 
     Args:
-        actor_id (str): The ID or name of the Apify Actor.
+        actor_name (str): The ID or name of the Apify Actor.
 
     Returns:
         ActorInputDefinition: The input schema of the specified Actor.
@@ -82,10 +89,10 @@ def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition | str:
         ValueError: If the input schema for the Actor cannot be retrieved.
     """
     apify_client = ApifyClient(token=get_apify_token())
-    build = get_actor_latest_build(apify_client, actor_id)
+    build = get_actor_latest_build(apify_client, actor_name)
 
     if not (actor_definition := build.get('actorDefinition')):
-        raise ValueError(f'Actor definition not found in the Actor build for Actor: {actor_id}')
+        raise ValueError(f'Actor definition not found in the Actor build for Actor: {actor_name}')
 
     if not (actor_input := actor_definition.get('input')):
         return 'Actor input schema is not available.'
@@ -106,54 +113,63 @@ def tool_get_actor_input_schema(actor_id: str) -> ActorInputDefinition | str:
 
 UITHUB_LINK = 'https://uithub.com/{repo_path}?accept=application/json&maxTokens={max_tokens}'
 
+FILES_TO_SKIP = [
+    'license',
+    'package-lock.json',
+    'yarn.lock',
+    'readme.md',
+    'poetry.lock',
+    'requirements.txt',
+    'setup.py',
+    'uv.lock',
+]
 
-class GetGithubRepoContextInput(BaseModel):
-    """Input schema for GetGithubRepoContext."""
 
-    repository_url: str = Field(..., description='The URL of the GitHub repository')
-    max_tokens: int = Field(120_000, description='Maximum number of tokens to retrieve')
+@tool
+def tool_get_code_context(actor_name: str, max_tokens: int = 120_000) -> CodeContext | str:
+    """Get code context for the specified Apify Actor, including file tree and file contents.
 
+    Args:
+        actor_name (str): The ID of the Apify Actor.
+        max_tokens (int): Maximum number of tokens to retrieve. Default is 120,000.
 
-class GetGithubRepoContextTool(BaseTool):
-    name: str = 'get_github_repo_context'
-    description: str = 'Fetch the context of the specified GitHub repository.'
-    args_schema: type[BaseModel] = GetGithubRepoContextInput
+    Returns:
+        CodeContext: The code context of the specified Actor.
+        str: Error message if the code context cannot be retrieved.
+    """
 
-    def _run(self, repository_url: str, max_tokens: int = 120_000) -> GithubRepoContext | str:
-        verify_response = requests.get(repository_url, timeout=REQUESTS_TIMEOUT_SECS)
-        if verify_response.status_code == requests.codes.not_found:
-            return (
-                f'Repository {repository_url} does not exist. Code is not available. '
-                'If other repository links are available, use them; otherwise, '
-                'skip the tool and grade the code as N/A.'
-            )
+    apify_client = ApifyClient(token=get_apify_token())
+    source_files = get_actor_source_files(apify_client, actor_name)
+    if source_files:
+        tree = generate_file_tree(source_files)
+        files = []
+        for file in source_files:
+            if any(substring in file['name'].lower() for substring in FILES_TO_SKIP):
+                continue
+            files.append(CodeFile(name=file['name'], content=file['content']))
+        return CodeContext(tree=tree, files=files)
 
-        repo_path = repository_url.split('github.com/')[-1].replace('.git', '')
+    repo_urls = get_actor_github_urls(apify_client, actor_name)
+    for repo_url in repo_urls:
+        if not github_repo_exists(repo_url):
+            continue
+
+        repo_path = repo_url.split('github.com/')[-1].replace('.git', '')
 
         url = UITHUB_LINK.format(repo_path=repo_path, max_tokens=max_tokens)
         response = requests.get(url, timeout=REQUESTS_TIMEOUT_SECS)
 
         data = response.json()
         tree = data['tree']
-        files: list[GithubRepoFile] = []
+        files: list[CodeFile] = []
 
         for name, file in data.get('files', {}).items():
-            if any(
-                substring in name.lower()
-                for substring in [
-                    'license',
-                    'package-lock.json',
-                    'yarn.lock',
-                    'readme.md',
-                    'poetry.lock',
-                    'requirements.txt',
-                    'setup.py',
-                    'uv.lock',
-                ]
-            ):
+            if any(substring in name.lower() for substring in FILES_TO_SKIP):
                 continue
             if file['type'] != 'content':
                 continue
-            files.append(GithubRepoFile(name=name, content=file['content']))
+            files.append(CodeFile(name=name, content=file['content']))
 
-        return GithubRepoContext(tree=tree, files=files)
+        return CodeContext(tree=tree, files=files)
+
+    return f'Code for Actor {actor_name} is not available. Skip the tool and grade the code as N/A.'

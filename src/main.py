@@ -12,12 +12,10 @@ from __future__ import annotations
 import logging
 
 from apify import Actor
-from apify_client import ApifyClient
 from crewai import Crew, Task
 
-from src.agents import create_actor_inspector_agent, create_actor_quality_agent, create_code_quality_agent
+from src.agents import create_actor_definition_quality_agent, create_actor_inspector_agent, create_code_quality_agent
 from src.agents2 import create_pricing_check_agent, create_uniqueness_check_agent
-from src.utils import get_actor_github_urls, get_apify_token
 
 fallback_input = {
     'actorId': 'apify/rag-web-browser',
@@ -43,32 +41,25 @@ async def main() -> None:
         # fallback input is provided only for testing, you need to delete this line
         actor_input = {**fallback_input, **actor_input}
 
-        actor_id = actor_input.get('actorId')
+        actor_name = actor_input.get('actorName')
         model_name = actor_input.get('modelName', 'gpt-4o-mini')
         if debug := actor_input.get('debug', True):
             Actor.log.setLevel(logging.DEBUG)
             logger = logging.getLogger('apify')
             logger.setLevel(logging.DEBUG)
-        if not actor_id:
-            raise ValueError('Missing the "actorId" attribute in the input!')
-
-        apify_client = ApifyClient(token=get_apify_token())
-        github_repo_urls = get_actor_github_urls(apify_client, actor_id)
-        Actor.log.debug('Github repo URLs: %s', github_repo_urls)
+        if not actor_name:
+            raise ValueError('Missing the "actorName" attribute in the input!')
 
         inspector_agent = create_actor_inspector_agent(model_name)
         code_quality_agent = create_code_quality_agent(model_name, debug=debug)
-        actor_quality_agent = create_actor_quality_agent(model_name, debug=debug)
+        actor_quality_agent = create_actor_definition_quality_agent(model_name, debug=debug)
         uniqueness_check_agent = create_uniqueness_check_agent(model_name, debug=debug)
         pricing_check_agent = create_pricing_check_agent(model_name, debug=debug)
 
         code_quality_task = Task(
             description=(
-                f"Analyze the code quality of the Apify Actor '{actor_id}'\n"
-                'Here is list of possible github code repository urls for this '
-                'actor, if first does not work, try the next one:\n'
-                f'{github_repo_urls}\n'
-                'If the GitHub URL is not provided, skip all code-related tools '
+                f"Analyze the code quality of the Apify Actor '{actor_name}'\n"
+                'If code is not available, skip all code-related tools '
                 'and explicitly state that the code cannot be evaluated, '
                 "assigning an 'N/A' grade. "
                 'Evaluate the following criteria:\n'
@@ -105,9 +96,8 @@ async def main() -> None:
 
         actor_quality_task = Task(
             description=(
-                f"Assess the quality of the Apify Actor '{actor_id}' based on its"
-                ' documentation and usability, using the GitHub repository at: '
-                f'{github_repo_urls}. '
+                f"Assess the quality of the Apify Actor '{actor_name}' based on its"
+                ' documentation and usability. '
                 'Evaluate the following criteria:\n'
                 "- **README Clarity**: Is the README well-defined? Rate as 'bad'"
                 " (poorly defined), 'good' (partially clear), or 'great' (fully "
@@ -139,9 +129,8 @@ async def main() -> None:
 
         uniqueness_task = Task(
             description=(
-                f"Evaluate the uniqueness of the Apify Actor '{actor_id}' "
-                'compared to similar actors, using the GitHub repository at: '
-                f'{github_repo_urls}. '
+                f"Evaluate the uniqueness of the Apify Actor '{actor_name}' "
+                'compared to similar actors. '
                 'Assess the following criteria:\n'
                 '- **Comparison**: Is the actor unique compared to peers? Rate '
                 "as 'bad' (very similar), 'good' (somewhat unique), or 'great' "
@@ -167,9 +156,8 @@ async def main() -> None:
 
         pricing_task = Task(
             description=(
-                f"Analyze the pricing of the Apify Actor '{actor_id}' for "
-                'competitiveness and sensibility, using the GitHub repository '
-                f'at: {github_repo_urls}. '
+                f"Analyze the pricing of the Apify Actor '{actor_name}' for "
+                'competitiveness and sensibility. '
                 'Evaluate the following criteria:\n'
                 '- **Competitiveness**: Is pricing competitive with similar '
                 "actors? Rate as 'bad' (expensive), 'good' (moderate), or 'great'"
@@ -195,8 +183,7 @@ async def main() -> None:
         final_task = Task(
             description=(
                 f'Compile a final quality assessment for the Apify Actor '
-                f"'{actor_id}' using the GitHub repository at: {github_repo_urls}"
-                '. '
+                f"'{actor_name}'. "
                 'Include the actor name and a brief summary of its purpose. '
                 'Summarize findings from previous tasks and assign an overall '
                 'rating:\n'
@@ -252,7 +239,7 @@ async def main() -> None:
 
         await Actor.push_data(
             {
-                'actorId': actor_id,
+                'actorId': actor_name,
                 'response': raw_response,
             }
         )
