@@ -103,7 +103,7 @@ class Stats(BaseModel):
 
     total_runs: int | None = None
     total_users30_days: int | None = None
-    public_actor_run_stats30_days: dict = None
+    public_actor_run_stats30_days: dict | None = None
     model_config = config_to_camel
 
 

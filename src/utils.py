@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 import requests
 from apify_client import ApifyClient
@@ -28,7 +29,7 @@ def get_actor_id(apify_client: ApifyClient, actor_name: str) -> str:
     if not (actor_id := actor.get('id')):
         raise ValueError(f'Failed to get the Actor object ID for {actor_name}.')
 
-    return actor_id
+    return str(actor_id)
 
 
 def generate_file_tree(files: list[dict]) -> dict:
@@ -41,7 +42,7 @@ def generate_file_tree(files: list[dict]) -> dict:
     Returns:
         dict: Nested dictionary representing the file tree structure
     """
-    tree = {}
+    tree: dict = {}
 
     for file_info in files:
         # Split the path into components
@@ -103,7 +104,7 @@ def github_repo_exists(repository_url: str) -> bool:
         bool: True if the repository exists, False otherwise.
     """
     verify_response = requests.get(repository_url, timeout=REQUESTS_TIMEOUT_SECS)
-    return verify_response.status_code == requests.codes.ok
+    return bool(verify_response.status_code == requests.codes.ok)
 
 
 def get_actor_source_files(apify_client: ApifyClient, actor_name: str) -> list[dict]:
@@ -119,13 +120,12 @@ def get_actor_source_files(apify_client: ApifyClient, actor_name: str) -> list[d
     """
     actor_id = get_actor_id(apify_client, actor_name)
     versions = apify_client.actor(actor_id).versions().list().items
-    latest_vesion = filter(lambda x: x.get('buildTag') == 'latest', versions)
-    if not (version := next(latest_vesion, None)):
+    latest_version = next((x for x in versions if x.get('buildTag') == 'latest'), None)
+    if not latest_version:
         return []
 
-    source_files = version.get('sourceFiles')
-    text_source_files = filter(lambda x: x.get('format', '').lower() == 'text', source_files)
-    return list(text_source_files)
+    source_files = latest_version.get('sourceFiles', [])
+    return [file for file in source_files if file.get('format', '').lower() == 'text']
 
 
 def get_apify_token() -> str:
@@ -143,7 +143,7 @@ def get_apify_token() -> str:
     return token
 
 
-def get_actor_latest_build(apify_client: ApifyClient, actor_name: str) -> dict:
+def get_actor_latest_build(apify_client: ApifyClient, actor_name: str) -> dict[str, Any]:
     """Get the latest build of an Actor from the default build tag.
 
     Args:
@@ -170,5 +170,9 @@ def get_actor_latest_build(apify_client: ApifyClient, actor_name: str) -> dict:
     if (data := build.get('data')) is None:
         msg = f'Failed to get the latest build data of the Actor {actor_name}.'
         raise ValueError(msg)
+
+    if not isinstance(data, dict):
+        msg = f'Received invalid data for the latest build of the Actor {actor_name}.'
+        raise TypeError(msg)
 
     return data
