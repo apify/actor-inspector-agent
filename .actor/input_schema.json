@@ -8,15 +8,16 @@
       "type": "string",
       "description": "Name of the Actor to inspect.",
       "editor": "textfield",
-      "prefill": "jakub.kopecky/agent-actor-inspector"
+      "prefill": "jakub.kopecky/agent-actor-inspector",
+      "default": "jakub.kopecky/agent-actor-inspector"
     },
     "modelName": {
       "title": "OpenAI model",
       "type": "string",
       "description": "The OpenAI model to use. Currently supported models are gpt-4o and gpt-4o-mini, and the reasoning models o1 and o3-mini.",
       "enum": ["gpt-4o", "gpt-4o-mini", "o3-mini"],
-      "default": "gpt-4o",
-      "prefill": "gpt-4o"
+      "prefill": "gpt-4o",
+      "default": "gpt-4o-mini"
     },
     "debug": {
       "title": "Debug",

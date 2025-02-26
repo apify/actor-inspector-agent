@@ -12,15 +12,15 @@ from __future__ import annotations
 import logging
 
 from apify import Actor
-from crewai import Crew, Task
+from crewai import Crew, Task  # type: ignore[import-untyped]
 
-from src.agents import create_actor_definition_quality_agent, create_actor_inspector_agent, create_code_quality_agent
-from src.agents2 import create_pricing_check_agent, create_uniqueness_check_agent
-
-fallback_input = {
-    'actorId': 'apify/rag-web-browser',
-    'modelName': 'gpt-4o-mini',
-}
+from src.agents import (
+    create_actor_definition_quality_agent,
+    create_actor_inspector_agent,
+    create_code_quality_agent,
+    create_pricing_check_agent,
+    create_uniqueness_check_agent,
+)
 
 
 async def main() -> None:
@@ -38,8 +38,6 @@ async def main() -> None:
     async with Actor:
         # Handle input
         actor_input = await Actor.get_input() or {}
-        # fallback input is provided only for testing, you need to delete this line
-        actor_input = {**fallback_input, **actor_input}
 
         actor_name = actor_input.get('actorName')
         model_name = actor_input.get('modelName', 'gpt-4o-mini')
