@@ -22,11 +22,6 @@ from src.agents import (
     create_uniqueness_check_agent,
 )
 
-fallback_input = {
-    'actorId': 'apify/rag-web-browser',
-    'modelName': 'gpt-4o-mini',
-}
-
 
 async def main() -> None:
     """Main entry point for the Apify Actor.
@@ -43,8 +38,6 @@ async def main() -> None:
     async with Actor:
         # Handle input
         actor_input = await Actor.get_input() or {}
-        # fallback input is provided only for testing, you need to delete this line
-        actor_input = {**fallback_input, **actor_input}
 
         actor_name = actor_input.get('actorName')
         model_name = actor_input.get('modelName', 'gpt-4o-mini')
