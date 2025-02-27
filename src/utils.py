@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Any
 
@@ -6,15 +7,31 @@ from apify_client import ApifyClient
 
 from src.const import REQUESTS_TIMEOUT_SECS
 
-APIFY_API_ENDPOINT_GET_DEFAULT_BUILD = 'https://api.apify.com/v2/acts/{actor_id}/builds/default'
+APIFY_API_GET_DEFAULT_BUILD = 'https://api.apify.com/v2/acts/{actor_id}/builds/default'
+
+logger = logging.getLogger('apify')
 
 
-def get_actor_id(apify_client: ApifyClient, actor_name: str) -> str:
+def get_apify_token() -> str:
+    """
+    Retrieve the Apify API token from environment variables.
+
+    Returns:
+        str: The Apify API token.
+
+    Raises:
+        ValueError: If the APIFY_TOKEN environment variable is not set.
+    """
+    if not (token := os.getenv('APIFY_TOKEN')):
+        raise ValueError('APIFY_TOKEN environment variable is not set')
+    return token
+
+
+def get_actor_id(actor_name: str) -> str:
     """
     Retrieve the actor ID for a given actor name.
 
     Args:
-        apify_client (ApifyClient): An instance of the ApifyClient class.
         actor_name (str): The name of the actor.
 
     Returns:
@@ -23,6 +40,8 @@ def get_actor_id(apify_client: ApifyClient, actor_name: str) -> str:
     Raises:
         ValueError: If the actor is not found or the actor ID cannot be retrieved.
     """
+    logger.debug('Get actor ID for actor %s', actor_name)
+    apify_client = ApifyClient(token=get_apify_token())
     if not (actor := apify_client.actor(actor_name).get()):
         raise ValueError(f'Actor {actor_name} not found.')
 
@@ -67,12 +86,11 @@ def generate_file_tree(files: list[dict]) -> dict:
     return tree
 
 
-def get_actor_github_urls(apify_client: ApifyClient, actor_name: str) -> list[str]:
+def get_actor_github_urls(actor_name: str) -> list[str]:
     """
     Retrieve the GitHub repository URLs associated with an actor.
 
     Args:
-        apify_client (ApifyClient): An instance of the ApifyClient class.
         actor_name (str): The name of the actor.
 
     Returns:
@@ -81,9 +99,11 @@ def get_actor_github_urls(apify_client: ApifyClient, actor_name: str) -> list[st
     Raises:
         ValueError: If the actor is not found or the actor ID cannot be retrieved.
     """
-    actor_id = get_actor_id(apify_client, actor_name)
+    logger.debug('Get GitHub URLs for actor %s', actor_name)
+    apify_client = ApifyClient(token=get_apify_token())
+    actor_id = get_actor_id(actor_name)
     github_urls = []
-    build = get_actor_latest_build(apify_client, actor_id)
+    build = get_actor_latest_build(actor_id)
     if github_repo_url := build.get('actVersion', {}).get('gitRepoUrl'):
         github_urls.append(github_repo_url)
 
@@ -107,47 +127,30 @@ def github_repo_exists(repository_url: str) -> bool:
     return bool(verify_response.status_code == requests.codes.ok)
 
 
-def get_actor_source_files(apify_client: ApifyClient, actor_name: str) -> list[dict]:
+def get_actor_source_files(actor_name: str) -> list[dict]:
     """
-    Retrieve the source files for a given actor.
+    Retrieve the source files for the latest version of an actor from the default build tag.
 
     Args:
-        apify_client (ApifyClient): An instance of the ApifyClient class.
         actor_name (str): The name of the actor.
 
     Returns:
         list[dict]: A list of dictionaries representing the source files of the actor.
     """
-    actor_id = get_actor_id(apify_client, actor_name)
+    logger.debug('Get source files for actor %s', actor_name)
+    apify_client = ApifyClient(token=get_apify_token())
+    actor_id = get_actor_id(actor_name)
     versions = apify_client.actor(actor_id).versions().list().items
-    latest_version = next((x for x in versions if x.get('buildTag') == 'latest'), None)
-    if not latest_version:
-        return []
-
-    source_files = latest_version.get('sourceFiles', [])
-    return [file for file in source_files if file.get('format', '').lower() == 'text']
+    if latest_version := next((x for x in versions if x.get('buildTag') == 'latest'), None):
+        source_files = latest_version.get('sourceFiles', [])
+        return [file for file in source_files if file.get('format', '').lower() == 'text']
+    return []
 
 
-def get_apify_token() -> str:
-    """
-    Retrieve the Apify API token from environment variables.
-
-    Returns:
-        str: The Apify API token.
-
-    Raises:
-        ValueError: If the APIFY_TOKEN environment variable is not set.
-    """
-    if not (token := os.getenv('APIFY_TOKEN')):
-        raise ValueError('APIFY_TOKEN environment variable is not set')
-    return token
-
-
-def get_actor_latest_build(apify_client: ApifyClient, actor_name: str) -> dict[str, Any]:
+def get_actor_latest_build(actor_name: str) -> dict[str, Any]:
     """Get the latest build of an Actor from the default build tag.
 
     Args:
-        apify_client (ApifyClient): An instance of the ApifyClient class.
         actor_name (str): Actor name from Apify store to run.
 
     Returns:
@@ -157,9 +160,10 @@ def get_actor_latest_build(apify_client: ApifyClient, actor_name: str) -> dict[s
         ValueError: If the Actor is not found or the build data is not found.
         TypeError: If the build is not a dictionary.
     """
-    actor_obj_id = get_actor_id(apify_client, actor_name)
+    actor_obj_id = get_actor_id(actor_name)
+    url = APIFY_API_GET_DEFAULT_BUILD.format(actor_id=actor_obj_id)
 
-    url = APIFY_API_ENDPOINT_GET_DEFAULT_BUILD.format(actor_id=actor_obj_id)
+    logger.debug('Get latest build for Actor URL: %s', url)
     response = requests.request('GET', url, timeout=REQUESTS_TIMEOUT_SECS)
 
     build = response.json()

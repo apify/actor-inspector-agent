@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 
 from apify import Actor
 from crewai import Crew, Task  # type: ignore[import-untyped]
@@ -25,20 +26,26 @@ async def main() -> None:
     and it also enhances performance in
     the field of web scraping significantly.
 
-    Raises:
-        ValueError: If the input is missing required attributes.
     """
     async with Actor:
+        Actor.log.info('Starting Actor Inspector Agent')
+        count = math.ceil((Actor.get_env().get('memory_mbytes', 1024) or 1024) // 1024)
+        await Actor.charge(event_name='actor-start-gb', count=count)
+        Actor.log.info('Charged for Actor start %d GB', count)
+
         actor_input = await Actor.get_input() or {}
 
-        actor_name = actor_input.get('actorName')
+        if not (actor_name := actor_input.get('actorName')):
+            await Actor.fail(
+                status_message='Missing the "actorName" attribute in the input!'
+                ' Please provide the name of the actor in the form of user-name/actor-name.',
+            )
+
         model_name = actor_input.get('modelName', 'gpt-4o-mini')
         if debug := actor_input.get('debug', True):
             Actor.log.setLevel(logging.DEBUG)
             logger = logging.getLogger('apify')
             logger.setLevel(logging.DEBUG)
-        if not actor_name:
-            raise ValueError('Missing the "actorName" attribute in the input!')
 
         inspector_agent = create_actor_inspector_agent(model_name, debug=debug)
         code_quality_agent = create_code_quality_agent(model_name, debug=debug)
@@ -59,7 +66,7 @@ async def main() -> None:
                 '- **Linter**: Is a linter enabled? Rate as "bad" (not enabled), '
                 '"good" (partially enabled), or "great" (fully enabled). Explain '
                 'briefly.\n'
-                '- **Code Smells**: Are there code smells (e.g., duplication)? '
+                '- **Code smells**: Are there code smells (e.g., duplication)? '
                 'Rate as "bad" (many), "good" (some), or "great" (none). Explain '
                 'briefly.\n'
                 '- **Security**: Are there visible security vulnerabilities '
@@ -74,7 +81,7 @@ async def main() -> None:
             ),
             expected_output=(
                 'A structured report in markdown format with:\n'
-                '- A section for each criterion (Tests, Linter, Code Smells, '
+                '- A section for each criterion (Tests, Linter, Code smells, '
                 'Security, Performance, Style).\n'
                 '- Each section includes a rating ("bad", "good", "great" or '
                 '"N/A" if no URL) and a 1-2 sentence explanation.\n'
@@ -92,7 +99,7 @@ async def main() -> None:
                 '- **README Clarity**: Is the README well-defined? Rate as "bad" '
                 '(poorly defined), "good" (partially clear), or "great" (fully '
                 'detailed). Explain briefly.\n'
-                '- **Input Properties**: Are input properties clear and logical? '
+                '- **Input properties**: Are input properties clear and logical? '
                 'Rate as "bad" (unclear), "good" (partially clear), or "great" '
                 '(well-defined). Explain briefly.\n'
                 '- **Usability**: Is the actor easy to use based on the README? '
@@ -101,14 +108,14 @@ async def main() -> None:
                 '- **Examples**: Are usage examples provided? Rate as "bad" '
                 '(none), "good" (some), or "great" (comprehensive). Explain '
                 'briefly.\n'
-                '- **GitHub Link**: Is the GitHub link in the README? Rate as '
+                '- **GitHub link**: Is the GitHub link in the README? Rate as '
                 '"bad" (missing), "good" (present but not prominent), or "great" '
                 '(clearly visible). Explain briefly.'
             ),
             expected_output=(
                 'A structured report in markdown format with:\n'
-                '- A section for each criterion (README Clarity, Input '
-                'Properties, Usability, Examples, GitHub Link).\n'
+                '- A section for each criterion (README clarity, Input '
+                'properties, Usability, Examples, GitHub link).\n'
                 '- Each section includes a rating ("bad", "good", "great") and a '
                 '1-2 sentence explanation.\n'
                 '- A brief overall summary (2-3 sentences) with suggestions for '
@@ -128,14 +135,14 @@ async def main() -> None:
                 '- **Functionality**: Does it offer unique features? Rate as '
                 '"bad" (none), "good" (some), or "great" (highly unique). Explain '
                 'briefly.\n'
-                '- **Selling Points**: Are there standout selling points? Rate '
+                '- **Selling points**: Are there standout selling points? Rate '
                 'as "bad" (none), "good" (some), or "great" (multiple). Explain '
                 'briefly.'
             ),
             expected_output=(
                 'A structured report in markdown format with:\n'
                 '- A section for each criterion (Comparison, Functionality, '
-                'Selling Points).\n'
+                'Selling points).\n'
                 '- Each section includes a rating ("bad", "good", "great") and a '
                 '1-2 sentence explanation.\n'
                 '- A brief overall summary (2-3 sentences) highlighting unique '
@@ -175,11 +182,13 @@ async def main() -> None:
                 f'Compile a final quality assessment for the Apify Actor '
                 f'"{actor_name}". '
                 'Include the actor name and a brief summary of its purpose. '
+                'Use sentence case in the report: capitalize only the first '
+                'word of sentences and proper nouns. '
                 'Summarize findings from previous tasks and assign an overall '
                 'rating:\n'
-                '- **Code Quality**: Summarize code quality findings. Rate as '
+                '- **Code quality**: Summarize code quality findings. Rate as '
                 '"bad", "good", or "great". Explain in 1-2 sentences.\n'
-                '- **Actor Quality**: Summarize actor quality findings. Rate as '
+                '- **Actor quality**: Summarize actor quality findings. Rate as '
                 '"bad", "good", or "great". Explain in 1-2 sentences.\n'
                 '- **Uniqueness**: Summarize uniqueness findings. Rate as "bad", '
                 '"good", or "great". Explain in 1-2 sentences.\n'
@@ -192,7 +201,7 @@ async def main() -> None:
                 'A concise final report in markdown format with:\n'
                 '- A header section including the Actor Name and a brief Summary '
                 'of what the actor does (2-3 sentences).\n'
-                '- A section for each category (Code Quality, Actor Quality, '
+                '- A section for each category (Code quality, Actor quality, '
                 'Uniqueness, Pricing, Overall).\n'
                 '- Each section includes a rating ("bad", "good", "great") and a '
                 '1-2 sentence explanation.\n'
@@ -220,12 +229,10 @@ async def main() -> None:
         Actor.log.info('Kicking off the crew...')
         crew_output = crew.kickoff()
         raw_response = crew_output.raw
-        Actor.log.debug(raw_response)
+        Actor.log.debug('Raw response: %s', raw_response)
 
         total_tokens = crew_output.token_usage.total_tokens
-        Actor.log.debug(total_tokens)
-        # charge for task completion
-        await Actor.charge(event_name='task-completed')
+        Actor.log.debug('Total tokens used: %d', total_tokens)
 
         await Actor.push_data(
             {
@@ -234,9 +241,5 @@ async def main() -> None:
             }
         )
         Actor.log.info('Pushed the data into the dataset!')
-
-
-if __name__ == '__main__':
-    import asyncio
-
-    asyncio.run(main())
+        await Actor.charge(event_name='task-completed', count=1)
+        Actor.log.info('Charged for task completed')

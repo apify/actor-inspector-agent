@@ -10,11 +10,11 @@
         "component": "table",
         "properties": {
           "actorId": {
-            "label": "actorId",
+            "label": "Actor name",
             "format": "text"
           },
           "response": {
-            "label": "response",
+            "label": "Actor evaluation",
             "format": "text"
           }
         }
