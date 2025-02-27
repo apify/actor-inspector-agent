@@ -172,4 +172,10 @@ The CrewAI framework ensures collaboration between agents while maintaining focu
 
 Evaluate your favorite Apify Actors today and unlock insights to build or choose better tools! 🤖🔍
 
+---
+
+🌐 Open source
+
+This Actor is open source, hosted on [GitHub](https://github.com/apify/agent-actor-inspector).
+
 Are you missing any features?  Open an issue here or [create a pull request](https://github.com/apify/agent-actor-inspector/pulls).
