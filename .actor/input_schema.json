@@ -1,20 +1,27 @@
 {
-  "title": "Agent Actor Inspector",
+  "title": "Actor Inspector Agent",
   "type": "object",
   "schemaVersion": 1,
   "properties": {
     "actorName": {
-      "title": "actorName",
+      "title": "Actor name in the form of user-name/actor-name",
       "type": "string",
-      "description": "Name of the Actor to inspect.",
+      "description": "Name of Actor to inspect.",
       "editor": "textfield",
       "prefill": "jakub.kopecky/agent-actor-inspector",
       "default": "jakub.kopecky/agent-actor-inspector"
     },
+    "pedantic": {
+      "title": "Pedantic",
+      "type": "boolean",
+      "description": "If enabled, the analysis is very critical and pedantic.",
+      "editor": "checkbox",
+      "default": true
+    },
     "modelName": {
       "title": "OpenAI model",
       "type": "string",
-      "description": "The OpenAI model to use. Currently supported models are gpt-4o and gpt-4o-mini, and the reasoning models o1 and o3-mini.",
+      "description": "The OpenAI model to use. Currently supported models are gpt-4o and gpt-4o-mini, and the reasoning model and o3-mini.",
       "enum": ["gpt-4o", "gpt-4o-mini", "o3-mini"],
       "prefill": "gpt-4o",
       "default": "gpt-4o-mini"
@@ -22,7 +29,7 @@
     "debug": {
       "title": "Debug",
       "type": "boolean",
-      "description": "If enabled, the Actor will run in debug mode and produce more output.",
+      "description": "If enabled, Actor provides detailed information with tool calls and reasoning.",
       "editor": "checkbox",
       "default": true
     }

@@ -10,10 +10,11 @@ from __future__ import annotations
 
 import datetime
 import logging
+from urllib.parse import urlparse
 
 import requests
 from apify_client import ApifyClient
-from crewai.tools import BaseTool, tool  # type: ignore[import-untyped]
+from crewai.tools import BaseTool  # type: ignore[import-untyped]
 from pydantic import BaseModel, Field
 
 from src.const import REQUESTS_TIMEOUT_SECS
@@ -29,6 +30,19 @@ from src.utils import (
 
 logger = logging.getLogger('apify')
 
+UITHUB_LINK = 'https://uithub.com/{repo_path}?accept=application/json&maxTokens={max_tokens}'
+
+IGNORE_FILES = [
+    'license',
+    'package-lock.json',
+    'yarn.lock',
+    'readme.md',
+    'poetry.lock',
+    'requirements.txt',
+    'setup.py',
+    'uv.lock',
+]
+
 
 class GetActorReadmeInput(BaseModel):
     """Input schema for GetActorReadme."""
@@ -42,112 +56,146 @@ class GetActorReadmeTool(BaseTool):
     args_schema: type[BaseModel] = GetActorReadmeInput
 
     def _run(self, actor_name: str) -> str:
+        """Execute the tool to get the README of an Apify Actor.
+
+        Args:
+            actor_name (str): The name of the Apify Actor.
+        Returns:
+            A string containing the README content.
+        """
         logger.info('Getting README for actor %s', actor_name)
-        apify_client = ApifyClient(token=get_apify_token())
-        build = get_actor_latest_build(apify_client, actor_name)
+        build = get_actor_latest_build(actor_name)
         readme = build.get('actorDefinition', {}).get('readme')
         if not readme:
             raise ValueError(f'Failed to get the README for the Actor {actor_name}')
         return str(readme)
 
 
-@tool  # type: ignore[misc]
-def tool_get_actor_input_schema(actor_name: str) -> ActorInputDefinition | str:
-    """Tool to get the input schema of an Apify Actor.
+class GetActorInputSchemaInput(BaseModel):
+    """Input schema for GetActorInputSchemaTool."""
 
-    If the input schema is not found a None value is returned.
+    actor_name: str = Field(..., description='The ID or name of the Apify Actor.')
 
-    Args:
-        actor_name (str): The ID or name of the Apify Actor.
 
-    Returns:
-        ActorInputDefinition: The input schema of the specified Actor.
-
-    Raises:
-        ValueError: If the input schema for the Actor cannot be retrieved.
-    """
-    apify_client = ApifyClient(token=get_apify_token())
-    build = get_actor_latest_build(apify_client, actor_name)
-
-    if not (actor_definition := build.get('actorDefinition')):
-        raise ValueError(f'Actor definition not found in the Actor build for Actor: {actor_name}')
-
-    if not (actor_input := actor_definition.get('input')):
-        return 'Actor input schema is not available.'
-
-    properties: dict[str, ActorInputProperty] = {}
-    for name, prop in actor_input.get('properties', {}).items():
-        # Use prefill, if available, then default, if available
-        prop['default'] = prop.get('prefill', prop.get('default'))
-
-        properties[name] = ActorInputProperty(**prop)
-
-    return ActorInputDefinition(
-        title=actor_definition.get('title'),
-        description=actor_definition.get('description'),
-        properties=properties,
+class GetActorInputSchemaTool(BaseTool):
+    name: str = 'get_actor_input_schema'
+    description: str = (
+        'Retrieve the input schema of an Apify Actor. If no input schema is available, '
+        'an appropriate message is returned.'
     )
+    args_schema: type[BaseModel] = GetActorInputSchemaInput
+
+    def _run(self, actor_name: str) -> ActorInputDefinition | str:
+        """Execute the tool to get the input schema of an Apify Actor.
+
+        Args:
+            actor_name (str): The ID or name of the Apify Actor.
+
+        Returns:
+            ActorInputDefinition: The structured input schema of the Actor
+            str: A message if the input schema is not available.
+
+        Raises:
+            ValueError: If the Actor's input schema cannot be retrieved.
+        """
+        build = get_actor_latest_build(actor_name)
+
+        if not (actor_definition := build.get('actorDefinition')):
+            raise ValueError(f'Actor definition not found in the Actor build for Actor: {actor_name}')
+
+        if not (actor_input := actor_definition.get('input')):
+            return 'Actor input schema is not available.'
+
+        # Process properties
+        properties: dict[str, ActorInputProperty] = {}
+        for name, prop in actor_input.get('properties', {}).items():
+            # Use prefill value if available, default value otherwise
+            prop['default'] = prop.get('prefill', prop.get('default'))
+            properties[name] = ActorInputProperty(**prop)
+
+        return ActorInputDefinition(
+            title=actor_definition.get('title'),
+            description=actor_definition.get('description'),
+            properties=properties,
+        )
 
 
-UITHUB_LINK = 'https://uithub.com/{repo_path}?accept=application/json&maxTokens={max_tokens}'
+class GetActorCodeInput(BaseModel):
+    """Input schema for GetCodeContextTool."""
 
-FILES_TO_SKIP = [
-    'license',
-    'package-lock.json',
-    'yarn.lock',
-    'readme.md',
-    'poetry.lock',
-    'requirements.txt',
-    'setup.py',
-    'uv.lock',
-]
+    actor_name: str = Field(..., description='The ID or name of the Apify Actor.')
+    max_tokens: int = Field(120_000, description='Maximum number of tokens to retrieve. Default is 120,000.', gt=0)
 
 
-@tool  # type: ignore[misc]
-def tool_get_code_context(actor_name: str, max_tokens: int = 120_000) -> CodeContext | str:
-    """Get code context for the specified Apify Actor, including file tree and file contents.
+class GetActorCodeTool(BaseTool):
+    name: str = 'get_actor_code'
+    description: str = (
+        'Retrieve source code for a specified Apify Actor, including the file tree and file contents. '
+        'If no data is available from the Actor, the tool attempts to fetch code from GitHub.'
+    )
+    args_schema: type[BaseModel] = GetActorCodeInput
 
-    Args:
-        actor_name (str): The ID of the Apify Actor.
-        max_tokens (int): Maximum number of tokens to retrieve. Default is 120,000.
+    @staticmethod
+    def _get_code_from_github(repo_urls: list[str], max_tokens: int) -> CodeContext | None:
+        """Get code context from GitHub repository."""
 
-    Returns:
-        CodeContext: The code context of the specified Actor.
-        str: Error message if the code context cannot be retrieved.
-    """
+        for repo_url in repo_urls:
+            if not github_repo_exists(repo_url):
+                continue
 
-    apify_client = ApifyClient(token=get_apify_token())
-    source_files = get_actor_source_files(apify_client, actor_name)
-    if source_files:
+            parsed_url = urlparse(repo_url)
+            repo_path = parsed_url.path.strip('/').replace('.git', '').split('#')[0]
+
+            url = UITHUB_LINK.format(repo_path=repo_path, max_tokens=max_tokens)
+            response = requests.get(url, timeout=REQUESTS_TIMEOUT_SECS)
+            data = response.json()
+
+            tree = data['tree']
+            filtered_repo_files = [
+                CodeFile(name=name, content=file['content'])
+                for name, file in data.get('files', {}).items()
+                if not any(substring in name.lower() for substring in IGNORE_FILES) and file['type'] == 'content'
+            ]
+            return CodeContext(tree=tree, files=filtered_repo_files)
+        return None
+
+    @staticmethod
+    def _get_code_from_source(source_files: list[dict]) -> CodeContext:
+        """Get code from source files."""
+
         tree = generate_file_tree(source_files)
         filtered_source_files = [
             CodeFile(name=file['name'], content=file['content'])
             for file in source_files
-            if not any(substring in file['name'].lower() for substring in FILES_TO_SKIP)
+            if not any(substring in file['name'].lower() for substring in IGNORE_FILES)
         ]
         return CodeContext(tree=tree, files=filtered_source_files)
 
-    repo_urls = get_actor_github_urls(apify_client, actor_name)
-    for repo_url in repo_urls:
-        if not github_repo_exists(repo_url):
-            continue
+    def _run(self, actor_name: str, max_tokens: int = 120_000) -> CodeContext | str:
+        """Execute the tool to retrieve the source code for Apify Actor.
 
-        repo_path = repo_url.split('github.com/')[-1].replace('.git', '')
+        Args:
+            actor_name (str): The ID or name of the Apify Actor.
+            max_tokens (int, optional): Maximum number of tokens to retrieve. Defaults to 120_000.
 
-        url = UITHUB_LINK.format(repo_path=repo_path, max_tokens=max_tokens)
-        response = requests.get(url, timeout=REQUESTS_TIMEOUT_SECS)
+        Returns:
+            CodeContext: Structured code context of the specified Actor.
+            str: An error message if code context cannot be retrieved at all.
+        """
+        logger.info('Get code context for actor %s, max_tokens=%s', actor_name, max_tokens)
+        # Try to get the source files
+        if source_files := get_actor_source_files(actor_name):
+            return self._get_code_from_source(source_files)
 
-        data = response.json()
-        tree = data['tree']
-        filtered_repo_files = [
-            CodeFile(name=name, content=file['content'])
-            for name, file in data.get('files', {}).items()
-            if not any(substring in name.lower() for substring in FILES_TO_SKIP) and file['type'] == 'content'
-        ]
+        # Fall back to GitHub repository
+        repo_urls = get_actor_github_urls(actor_name)
+        logger.info('Falling back to GitHub URL for Actor %s, repo URLs: %s', actor_name, repo_urls)
 
-        return CodeContext(tree=tree, files=filtered_repo_files)
+        if code_context := self._get_code_from_github(repo_urls, max_tokens):
+            return code_context
 
-    return f'Code for Actor {actor_name} is not available. Skip the tool and grade the code as N/A.'
+        # If no data is available, return an error message
+        return f'Code for Actor {actor_name} is not available. Skip the tool and grade the code as N/A.'
 
 
 class SearchRelatedActorsInput(BaseModel):
@@ -175,10 +223,10 @@ class SearchRelatedActorsTool(BaseTool):
     def _run(self, search: str, limit: int = 10, offset: int = 0) -> ActorStoreList | None:
         """Execute the tool's logic to search related actors by keyword."""
         try:
-            logger.info(f"Searching for Actors, search: '{search}'")
+            logger.info('Search related actors with key words: %s', search)
             apify_client = ApifyClient(token=get_apify_token())
             search_results = apify_client.store().list(limit=limit, offset=offset, search=search).items
-            logger.info(f"Found {len(search_results)} Actors related to '{search}'")
+            logger.info('Found %s Actors related with key words: %s', len(search_results), search)
             return ActorStoreList.model_validate(search_results, strict=False)
         except Exception as e:
             logger.exception(f"Failed to search for Actors related to '{search}'")
@@ -197,7 +245,7 @@ class GetActorPricingInfoTool(BaseTool):
     args_schema: type[BaseModel] = GetActorPricingInfoInput
 
     def _run(self, actor_name: str) -> PricingInfo | None:
-        logger.info('Getting pricing information for actor %s', actor_name)
+        logger.info('Get pricing information for actor %s', actor_name)
         apify_client = ApifyClient(token=get_apify_token())
         actor = apify_client.actor(actor_name).get()
         if not actor:
@@ -215,82 +263,3 @@ class GetActorPricingInfoTool(BaseTool):
             current_pricing = pricing_entry
 
         return PricingInfo.model_validate(current_pricing)
-
-
-class GetApifyPlatformPricing(BaseTool):
-    name: str = 'get_apify_platform_pricing_per_usage'
-    description: str = 'Get pricing plans for Apify Platform for pay per platform usage.'
-
-    def _run(self) -> list[dict]:
-        logger.info('Getting pricing information of Apify')
-        return [
-            {
-                'name': 'Free',
-                'cost': '$0 per month',
-                'prepaid_usage': '$5',
-                'compute_unit_pricing': '$0.4 per CU',
-                'actor_ram': '8 GB',
-                'max_concurrent_runs': 25,
-                'support_level': 'Community support',
-                'proxy_access': {
-                    'residential_proxies': '$8 per GB',
-                    'datacenter_proxies': '5 IPs included',
-                    'serps_proxy': '$2.5 per 1,000 SERPs',
-                },
-            },
-            {
-                'name': 'Starter',
-                'cost': '$49 per month',
-                'prepaid_usage': '$49',
-                'compute_unit_pricing': '$0.4 per CU',
-                'actor_ram': '32 GB',
-                'max_concurrent_runs': 32,
-                'support_level': 'Chat support',
-                'proxy_access': {
-                    'residential_proxies': '$8 per GB',
-                    'datacenter_proxies': '30 IPs included; additional IPs at $1 per IP',
-                    'serps_proxy': '$2.5 per 1,000 SERPs',
-                },
-            },
-            {
-                'name': 'Scale',
-                'cost': '$199 per month',
-                'prepaid_usage': '$199',
-                'compute_unit_pricing': '$0.3 per CU',
-                'actor_ram': '128 GB',
-                'max_concurrent_runs': 128,
-                'support_level': 'Priority chat support',
-                'personal_tech_training': '1 hour per quarter',
-                'proxy_access': {
-                    'residential_proxies': '$7.5 per GB',
-                    'datacenter_proxies': '200 IPs included; additional IPs at $0.8 per IP',
-                    'serps_proxy': '$2 per 1,000 SERPs',
-                },
-            },
-            {
-                'name': 'Business',
-                'cost': '$999 per month',
-                'prepaid_usage': '$999',
-                'compute_unit_pricing': '$0.25 per CU',
-                'actor_ram': '256 GB',
-                'max_concurrent_runs': 256,
-                'support_level': 'Dedicated account manager',
-                'personal_tech_training': '1 hour per month',
-                'proxy_access': {
-                    'residential_proxies': '$7 per GB',
-                    'datacenter_proxies': '500 IPs included; additional IPs at $0.6 per IP',
-                    'serps_proxy': '$1.7 per 1,000 SERPs',
-                },
-            },
-            {
-                'name': 'Enterprise',
-                'cost': 'Custom pricing',
-                'prepaid_usage': 'Custom',
-                'compute_unit_pricing': 'Custom',
-                'actor_ram': 'Custom',
-                'max_concurrent_runs': 'Custom',
-                'support_level': 'Service Level Agreement (SLA) with custom contract',
-                'personal_tech_training': 'Custom',
-                'proxy_access': 'Custom',
-            },
-        ]

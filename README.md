@@ -1,46 +1,48 @@
-# Agent Actor Inspector 🕵️‍♂️✨
+# Actor Inspector Agent
 
-[![Agent Actor Inspector](https://apify.com/actor-badge?actor=jakub.kopecky/agent-actor-inspector)](https://apify.com/jakub.kopecky/agent-actor-inspector)
+[![Agent Actor Inspector](https://apify.com/actor-badge?actor=jakub.kopecky/actor-inspector-agent)](https://apify.com/jakub.kopecky/actor-inspector-agent)
 [![GitHub Repo stars](https://img.shields.io/github/stars/apify/agent-actor-inspector)](https://github.com/apify/agent-actor-inspector/stargazers)
 
-The **Agent Actor Inspector** is an Apify AI Actor designed to evaluate and analyze other Apify Actors. It provides detailed reports on code quality, documentation, uniqueness, and pricing competitiveness, helping developers optimize their Actors and users choose the best tools for their needs.
+The **Actor Inspector Agent** is designed to evaluate and analyze other Apify Actors.
+It provides detailed reports on code quality, documentation, uniqueness, and pricing competitiveness, helping developers optimize their Actors and users choose the best tools for their needs.
 
-## 🌟 What is Agent Actor Inspector?
-
-This Actor is built to:
-
-- **Analyze Apify Actors**: Assesses code quality, documentation clarity, uniqueness, and pricing for any specified Actor.
-- **Generate Detailed Reports**: Produces structured markdown reports summarizing findings with clear ratings and actionable suggestions.
-- **Leverage AI**: Uses OpenAI models (e.g., `gpt-4o`, `gpt-4o-mini`, or reasoning models like `o3-mini`) for intelligent analysis.
-- **Push Results**: Stores the assessment in Apify’s dataset for easy access and review.
-
----
+This Agent is built using [CrewAI](https://docs.crewai.com/) and [Apify SDK](https://docs.apify.com/sdk/python) and is using modern and flexble pricing model for AI Agents [Pay Per Event](https://docs.apify.com/sdk/js/docs/next/guides/pay-per-event).
 
 ## 🎯 Features
 
-- **Code Quality Evaluation**: Checks for tests, linting, security, performance, and style consistency.
-- **Documentation Assessment**: Reviews README clarity, input properties, usability, examples, and GitHub visibility.
-- **Uniqueness Check**: Compares functionality against similar Actors to determine distinctiveness.
-- **Pricing Analysis**: Evaluates competitiveness and transparency of pricing models.
-- **Customizable AI Models**: Choose between `gpt-4o`, `gpt-4o-mini`, or `o3-mini` for analysis speed and depth.
+- 🧪 **Code quality**: Evaluates tests, linting, security, performance, and code style
+- 📚 **Documentation**: Reviews readme clarity, input schema, examples, and GitHub presence
+- 💫 **Uniqueness**: Compares features with similar actors to assess distinctiveness
+- 💰 **Pricing**: Analyzes price competitiveness and model transparency
+- 🚧 **Actor run** _(Coming soon)_: Tests actor execution and generates performance report
 
----
+## 🔄 How it works?
 
-## 📈 How It Works
+1. 📥 **Input**
+   - Actor name (e.g., `apify/instagram-scraper`)
+   - AI model selection (`gpt-4o`, `gpt-4o-mini`, `o3-mini`)
+   - _Optional_ debug mode
 
-1. **Input**: Provide the Actor name (e.g., `apify/instagram-scraper`), select an AI model, and optionally enable debug mode.
-2. **Processing**: The Actor fetches Actor details, source code (if available), README, pricing info, and related Actors, then analyzes them using specialized AI agents.
-3. **Output**: Generates a markdown report summarizing findings across all categories, pushed to the Apify dataset.
+2. 🤖 **Processing with CrewAI**
+   - Uses specialized AI agents working as a team:
+     - Code quality specialist: Reviews source code and tests
+     - Documentation expert: Analyzes readme and input schema
+     - Apify Store analyst: Evaluates pricing and uniqueness
+   - Each agent focuses on their expertise while collaborating for comprehensive analysis
+
+3. 📤 **Output**
+   - Generates detailed markdown report
+   - Includes ratings and suggestions for each category
+   - Automatically saves to Apify dataset
 
 ### 💰 Pricing
 
-This Actor uses the [Pay Per Event](https://docs.apify.com/sdk/js/docs/next/guides/pay-per-event) (PPE) model for flexible, usage-based pricing. It currently charges a flat fee per task completion.
+This Actor uses the [Pay Per Event](https://docs.apify.com/sdk/js/docs/next/guides/pay-per-event) (PPE) model for flexible, usage-based pricing. It currently charges for Actor start and a flat fee per task completion.
 
 | Event                  | Price (USD) |
 |------------------------|-------------|
-| Task Completion        | $1          |
-
-Future updates may include token-based pricing for AI model usage (e.g., per 100 tokens), as hinted in `ppe_utils.py`.
+| Actor start            | $0.05       |
+| Task Completion        | $0.95       |
 
 ### Input Example
 
@@ -59,15 +61,15 @@ A sample report might look like this (stored in the dataset):
 ```markdown
 **Final Overall Inspection Report for Apify Actor: apify/website-content-crawler**
 
-- **Code Quality:**
+- **Code quality:**
   - Rating: Unknown (Based on best practices).
   - Description: While direct analysis was unavailable, the actor is expected to follow best practices, ensuring organized, efficient, and secure code.
 
-- **Actor Quality:**
+- **Actor quality:**
   - Rating: Great
   - Description: The actor exhibits excellent documentation, with comprehensive guidance, use case examples, detailed input properties, and a user-friendly design that aligns with best practices.
 
-- **Actor Uniqueness:**
+- **Actor uniqueness:**
   - Rating: Good
   - Description: Although there are similar actors, its unique design for LLM integration and enhanced HTML processing options provide it with a distinct niche.
 
@@ -88,31 +90,81 @@ Dataset output:
 }
 ```
 
----
-
 ## ✨ Why Use Agent Actor Inspector?
 
-- **Developer Insights**: Identify areas to improve your Actor’s code, docs, or pricing.
-- **User Decision-Making**: Compare Actors to find the best fit for your needs.
+- **Developer insights**: Identify areas to improve your Actor’s code, docs, or pricing.
+- **User decision-making**: Compare Actors to find the best fit for your needs.
 - **Automation**: Streamlines Actor evaluation with AI-driven analysis.
 - **Scalability**: Analyze multiple Actors by running the Inspector in parallel.
-
----
 
 ## 🔧 Technical Highlights
 
 - **Built with Apify SDK**: Ensures seamless integration with the Apify platform.
-- **CrewAI Powered**: Uses multi-agent workflows for thorough, modular analysis.
-- **GitHub Integration**: Pulls source code from GitHub when available for deeper code quality checks.
-- **Flexible Tools**: Custom tools fetch READMEs, input schemas, pricing info, and related Actors.
+- **CrewAI powered**: Uses multi-agent workflows for thorough, modular analysis.
+- **GitHub integration**: Pulls source code from GitHub when available for deeper code quality checks.
+- **Flexible tools**: Custom tools fetch READMEs, input schemas, pricing info, and related Actors.
 
----
+## 🤖 Under the hood with [CrewAI](https://docs.crewai.com/)
+
+This Actor uses CrewAI to orchestrate a team of specialized AI agents that work together to analyze Apify Actors:
+
+### 👥 The crew
+
+1. **Code quality specialist**
+   ```python
+   goal = 'Deliver precise evaluation of code quality, focusing on tests, linting, code smells, security, performance, and style'
+   tools = [...]  # Fetches and analyzes source code
+   ```
+
+2. **Documentation expert**
+   ```python
+   goal = 'Evaluate documentation completeness, clarity, and usefulness for potential users'
+   tools = [...]  # Analyzes readme and input schema
+   ```
+
+3. **Pricing expert**
+   ```python
+   goal = 'Analyze pricing with respect to other Actors'
+   tools = [...]  # Analyzes competition
+   ```
+
+#### 🔄 Workflow
+
+1. The main process creates a crew of agents, each with:
+   - Specific role and expertise
+   - Defined goal and backstory
+   - Access to relevant tools
+   - Selected LLM model
+
+2. Agents work sequentially to:
+   - Gather required information using their tools
+   - Analyze data within their domain
+   - Provide structured evaluations
+   - Pass insights to other agents when needed
+
+3. Results are combined into a comprehensive markdown report with:
+   - Detailed analysis per category
+   - Clear ratings (great/good/bad)
+   - Actionable improvement suggestions
+
+#### 🛠️ Tools
+
+Each agent has access to specialized tools that:
+- Fetch actor source code and analyze its structure
+- Retrieve documentation and readme content
+- Get pricing information and find similar actors
+- Process and structure the gathered data
+
+The CrewAI framework ensures collaboration between agents while maintaining focus on their specific areas of expertise.
+
 
 ## 📖 Learn More
 
 - [Apify Platform](https://apify.com)
 - [Apify SDK Documentation](https://docs.apify.com/sdk/python)
 - [CrewAI Documentation](https://docs.crewai.com)
+- [What are AI Agents?](https://blog.apify.com/what-are-ai-agents/)
+- [AI agent architecture](https://blog.apify.com/ai-agent-architecture)
 
 ---
 
@@ -125,3 +177,5 @@ Evaluate your favorite Apify Actors today and unlock insights to build or choose
 🌐 Open source
 
 This Actor is open source, hosted on [GitHub](https://github.com/apify/agent-actor-inspector).
+
+Are you missing any features?  Open an issue here or [create a pull request](https://github.com/apify/agent-actor-inspector/pulls).
