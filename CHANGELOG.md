@@ -7,12 +7,11 @@ This changelog summarizes all changes of the [Actor Inspector Agent](https://api
 - Added uniqueness check agent
 - Added actor definition quality agent
 - Added code quality agent
+- Add pedantic option
+- Add suggestions for improvement
 
 ### 🐛 Bug Fixes
 - Fix bug when downloading code from GitHub URL
-
-
-
 
 ## 0.1.0 (2025-02-17)
 

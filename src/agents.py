@@ -8,14 +8,17 @@ from src.tools import (
     SearchRelatedActorsTool,
 )
 
+from src.const import PEDANTIC_MESSAGE_BACKSTORY, PEDANTIC_MESSAGE, SUGGESTIONS_MESSAGE
 
-def create_actor_inspector_agent(llm: str, debug: bool = False) -> Agent:
+
+def create_actor_inspector_agent(llm: str, debug: bool = False, pedantic: bool = False) -> Agent:
     """
     Agent for project management.
 
     Args:
         llm (str): LLM model name.
         debug (bool): If True, the agent will operate in verbose mode for debugging purposes.
+        pedantic (bool): If True, the agent will be more pedantic.
 
     Returns:
         Agent: An instance of the Agent class configured for project management.
@@ -25,11 +28,14 @@ def create_actor_inspector_agent(llm: str, debug: bool = False) -> Agent:
         goal=(
             'Coordinate a comprehensive quality review of an Apify Actor by synthesizing detailed reports from '
             'specialized agents and delivering a final assessment with clear ratings and justifications.'
+            f'{PEDANTIC_MESSAGE if pedantic else ""}'
+            f'{SUGGESTIONS_MESSAGE}'
         ),
         backstory=(
             "I'm a veteran project manager with a deep understanding of Apify Actors, skilled at orchestrating teams "
             'of expert agents. My strength lies in distilling complex analyses into concise, actionable reports that '
             'drive improvement and ensure quality.'
+            f'{PEDANTIC_MESSAGE_BACKSTORY if pedantic else ""}'
         ),
         allow_delegation=True,
         verbose=debug,
@@ -37,14 +43,14 @@ def create_actor_inspector_agent(llm: str, debug: bool = False) -> Agent:
     )
 
 
-def create_code_quality_agent(llm: str, debug: bool = False) -> Agent:
+def create_code_quality_agent(llm: str, debug: bool = False, pedantic: bool = False) -> Agent:
     """
     Create an Agent instance configured for code quality inspection.
 
     Args:
         llm (str): LLM model name.
         debug (bool): If True, the agent will operate in verbose mode for debugging purposes.
-
+        pedantic (bool): If True, the agent will be more pedantic.
     Returns:
         Agent: An instance of the Agent class configured for code quality inspection.
     """
@@ -54,12 +60,15 @@ def create_code_quality_agent(llm: str, debug: bool = False) -> Agent:
         goal=(
             'Deliver a precise evaluation of the code quality for a GitHub repository, focusing on tests, '
             'linting, code smells, security vulnerabilities, performance issues, and code style consistency.'
+            f'{PEDANTIC_MESSAGE if pedantic else ""}'
+            f'{SUGGESTIONS_MESSAGE}'
         ),
         backstory=(
             "I'm a seasoned software engineer with over a decade of experience auditing codebases for startups "
             'and enterprises alike. Armed with tools like GitHub repository analysis, I excel at identifying '
             'strengths and weaknesses in code quality, offering actionable insights to improve reliability, '
             'maintainability, and performance.'
+            f'{PEDANTIC_MESSAGE_BACKSTORY if pedantic else ""}'
         ),
         tools=tools,
         verbose=debug,
@@ -67,13 +76,14 @@ def create_code_quality_agent(llm: str, debug: bool = False) -> Agent:
     )
 
 
-def create_actor_definition_quality_agent(llm: str, debug: bool = False) -> Agent:
+def create_actor_definition_quality_agent(llm: str, debug: bool = False, pedantic: bool = False) -> Agent:
     """
     Create an Agent instance configured for Apify Actor quality inspection.
 
     Args:
         llm (str): LLM model name.
         debug (bool): If True, the agent will operate in verbose mode for debugging purposes.
+        pedantic (bool): If True, the agent will be more pedantic.
 
     Returns:
         Agent: An instance of the Agent class configured for Apify Actor quality inspection.
@@ -84,11 +94,14 @@ def create_actor_definition_quality_agent(llm: str, debug: bool = False) -> Agen
         goal=(
             "Assess the quality of an Apify Actor's documentation and usability by analyzing its README clarity, "
             'input properties, ease of use, example provision, and GitHub link visibility.'
+            f'{PEDANTIC_MESSAGE if pedantic else ""}'
+            f'{SUGGESTIONS_MESSAGE}'
         ),
         backstory=(
             "I'm a meticulous Apify expert with years of experience reviewing Actors for usability and documentation "
             'excellence. Using tools to fetch READMEs and input schemas, I ensure Actors are intuitive and '
             'well-documented, helping users adopt them seamlessly while meeting Apify Store standards.'
+            f'{PEDANTIC_MESSAGE_BACKSTORY if pedantic else ""}'
         ),
         tools=tools,
         verbose=debug,
@@ -96,14 +109,14 @@ def create_actor_definition_quality_agent(llm: str, debug: bool = False) -> Agen
     )
 
 
-def create_uniqueness_check_agent(llm: str, debug: bool = False) -> Agent:
+def create_uniqueness_check_agent(llm: str, debug: bool = False, pedantic: bool = False) -> Agent:
     """
     Create an Agent instance configured for code quality inspection.
 
     Args:
         llm (str): LLM model name.
         debug (bool): If True, the agent will operate in verbose mode for debugging purposes.
-
+        pedantic (bool): If True, the agent will be more pedantic.
     Returns:
         Agent: An instance of the Agent class configured for code quality inspection.
     """
@@ -126,6 +139,7 @@ def create_uniqueness_check_agent(llm: str, debug: bool = False) -> Agent:
             'My tools include retrieving Actor README and performing full-text searches to '
             'find related Actors. I need to execute search multiple times with different sets '
             'of keywords. I need to gather at least a couple of related Actors to provide a good comparison.'
+            f'{PEDANTIC_MESSAGE_BACKSTORY if pedantic else ""}'
         ),
         tools=tools,
         verbose=debug,
@@ -133,13 +147,14 @@ def create_uniqueness_check_agent(llm: str, debug: bool = False) -> Agent:
     )
 
 
-def create_pricing_check_agent(llm: str, debug: bool = False) -> Agent:
+def create_pricing_check_agent(llm: str, debug: bool = False, pedantic: bool = False) -> Agent:
     """
     Create an Agent instance configured for pricing comparison of Apify Actors.
 
     Args:
         llm (str): LLM model name.
         debug (bool): If True, the agent will operate in verbose mode.
+        pedantic (bool): If True, the agent will be more pedantic.
 
     Returns:
         Agent: An instance of the Agent class configured for pricing analysis.
@@ -158,6 +173,8 @@ def create_pricing_check_agent(llm: str, debug: bool = False) -> Agent:
             '- Pay-per-Usage: Pay based on the Apify platform usage generated when running the Actor.\n'
             'Provide a very short report with one of these ratings:\n'
             'GREAT (competitive pricing), GOOD (moderate), BAD (expensive).\n'
+            f'{PEDANTIC_MESSAGE if pedantic else ""}'
+            f'{SUGGESTIONS_MESSAGE}'
             'Include a brief explanation;\n\n'
             'Example output:\n'
             'Actor: apify/xyz-actor\n'
@@ -170,6 +187,7 @@ def create_pricing_check_agent(llm: str, debug: bool = False) -> Agent:
             'I am able to perform multiple searches with different sets of keywords.\n'
             'I am able to compare different pricing models. For example, when an Actor is paid per platform usage, '
             "I need to retrieve Apify's pricing plans for the platform and compare them with other pricing models.\n"
+            f'{PEDANTIC_MESSAGE_BACKSTORY if pedantic else ""}'
         ),
         tools=tools,
         verbose=debug,

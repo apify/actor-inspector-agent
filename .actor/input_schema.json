@@ -11,6 +11,13 @@
       "prefill": "jakub.kopecky/agent-actor-inspector",
       "default": "jakub.kopecky/agent-actor-inspector"
     },
+    "pedantic": {
+      "title": "Pedantic",
+      "type": "boolean",
+      "description": "If enabled, the analysis is very critical and pedantic.",
+      "editor": "checkbox",
+      "default": true
+    },
     "modelName": {
       "title": "OpenAI model",
       "type": "string",

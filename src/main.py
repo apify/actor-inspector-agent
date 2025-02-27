@@ -15,6 +15,7 @@ from src.agents import (
     create_pricing_check_agent,
     create_uniqueness_check_agent,
 )
+from src.const import PEDANTIC_MESSAGE
 
 
 async def main() -> None:
@@ -34,6 +35,7 @@ async def main() -> None:
         Actor.log.info('Charged for Actor start %d GB', count)
 
         actor_input = await Actor.get_input() or {}
+        Actor.log.info('Received input: %s', actor_input)
 
         if not (actor_name := actor_input.get('actorName')):
             await Actor.fail(
@@ -41,17 +43,18 @@ async def main() -> None:
                 ' Please provide the name of the actor in the form of user-name/actor-name.',
             )
 
+        pedantic = actor_input.get('pedantic', True)
         model_name = actor_input.get('modelName', 'gpt-4o-mini')
         if debug := actor_input.get('debug', True):
             Actor.log.setLevel(logging.DEBUG)
             logger = logging.getLogger('apify')
             logger.setLevel(logging.DEBUG)
 
-        inspector_agent = create_actor_inspector_agent(model_name, debug=debug)
-        code_quality_agent = create_code_quality_agent(model_name, debug=debug)
-        actor_quality_agent = create_actor_definition_quality_agent(model_name, debug=debug)
-        uniqueness_check_agent = create_uniqueness_check_agent(model_name, debug=debug)
-        pricing_check_agent = create_pricing_check_agent(model_name, debug=debug)
+        inspector_agent = create_actor_inspector_agent(model_name, debug=debug, pedantic=pedantic)
+        code_quality_agent = create_code_quality_agent(model_name, debug=debug, pedantic=pedantic)
+        actor_quality_agent = create_actor_definition_quality_agent(model_name, debug=debug, pedantic=pedantic)
+        uniqueness_check_agent = create_uniqueness_check_agent(model_name, debug=debug, pedantic=pedantic)
+        pricing_check_agent = create_pricing_check_agent(model_name, debug=debug, pedantic=pedantic)
 
         code_quality_task = Task(
             description=(
@@ -59,6 +62,7 @@ async def main() -> None:
                 'If code is not available, skip all code-related tools '
                 'and explicitly state that the code cannot be evaluated, '
                 'assigning an "N/A" grade. '
+                f'{PEDANTIC_MESSAGE if pedantic else ""}'
                 'Evaluate the following criteria:\n'
                 '- **Tests**: Are tests present? Rate as "bad" (no tests), "good" '
                 '(some tests, missing major functionality), or "great" (most '
@@ -85,6 +89,7 @@ async def main() -> None:
                 'Security, Performance, Style).\n'
                 '- Each section includes a rating ("bad", "good", "great" or '
                 '"N/A" if no URL) and a 1-2 sentence explanation.\n'
+                '- A brief list of suggestions for improvement if applicable.\n'
                 '- A brief overall summary (2-3 sentences) with suggestions for '
                 'improvement if applicable.'
             ),
@@ -95,8 +100,9 @@ async def main() -> None:
             description=(
                 f'Assess the quality of the Apify Actor "{actor_name}" based on its '
                 'documentation and usability. '
+                f'{PEDANTIC_MESSAGE if pedantic else ""}'
                 'Evaluate the following criteria:\n'
-                '- **README Clarity**: Is the README well-defined? Rate as "bad" '
+                '- **README clarity**: Is the README well-defined? Rate as "bad" '
                 '(poorly defined), "good" (partially clear), or "great" (fully '
                 'detailed). Explain briefly.\n'
                 '- **Input properties**: Are input properties clear and logical? '
@@ -118,6 +124,7 @@ async def main() -> None:
                 'properties, Usability, Examples, GitHub link).\n'
                 '- Each section includes a rating ("bad", "good", "great") and a '
                 '1-2 sentence explanation.\n'
+                '- A brief list of suggestions for improvement if applicable.\n'
                 '- A brief overall summary (2-3 sentences) with suggestions for '
                 'improvement.'
             ),
@@ -128,6 +135,7 @@ async def main() -> None:
             description=(
                 f'Evaluate the uniqueness of the Apify Actor "{actor_name}" '
                 'compared to similar actors. '
+                f'{PEDANTIC_MESSAGE if pedantic else ""}'
                 'Assess the following criteria:\n'
                 '- **Comparison**: Is the actor unique compared to peers? Rate '
                 'as "bad" (very similar), "good" (somewhat unique), or "great" '
@@ -155,6 +163,7 @@ async def main() -> None:
             description=(
                 f'Analyze the pricing of the Apify Actor "{actor_name}" for '
                 'competitiveness and sensibility. '
+                f'{PEDANTIC_MESSAGE if pedantic else ""}'
                 'Evaluate the following criteria:\n'
                 '- **Competitiveness**: Is pricing competitive with similar '
                 'actors? Rate as "bad" (expensive), "good" (moderate), or "great" '
@@ -171,6 +180,7 @@ async def main() -> None:
                 'Transparency).\n'
                 '- Each section includes a rating ("bad", "good", "great") and a '
                 '1-2 sentence explanation.\n'
+                '- A brief list of suggestions for improvement if applicable.\n'
                 '- A brief overall summary (2-3 sentences) with pricing '
                 'improvement suggestions.'
             ),
@@ -181,9 +191,9 @@ async def main() -> None:
             description=(
                 f'Compile a final quality assessment for the Apify Actor '
                 f'"{actor_name}". '
-                'Include the actor name and a brief summary of its purpose. '
-                'Use sentence case in the report: capitalize only the first '
-                'word of sentences and proper nouns. '
+                'Include the Actor name and a brief summary of its purpose. '
+                'Always Actor not actor.'
+                f'{PEDANTIC_MESSAGE if pedantic else ""}'
                 'Summarize findings from previous tasks and assign an overall '
                 'rating:\n'
                 '- **Code quality**: Summarize code quality findings. Rate as '
@@ -202,11 +212,11 @@ async def main() -> None:
                 '- A header section including the Actor Name and a brief Summary '
                 'of what the actor does (2-3 sentences).\n'
                 '- A section for each category (Code quality, Actor quality, '
-                'Uniqueness, Pricing, Overall).\n'
+                'Uniqueness, Pricing, Suggestions, Overall).\n'
                 '- Each section includes a rating ("bad", "good", "great") and a '
                 '1-2 sentence explanation.\n'
-                '- The Overall section provides a final rating and a 2-3 '
-                'sentence summary.'
+                '- The Suggestions section provides a list of suggestions for improvement.\n'
+                '- The Overall section provides a final rating and a 2-3 sentence summary.'
             ),
             context=[actor_quality_task, code_quality_task, pricing_task, uniqueness_task],
             agent=inspector_agent,
