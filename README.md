@@ -1,7 +1,7 @@
 # Actor Inspector Agent
 
 [![Agent Actor Inspector](https://apify.com/actor-badge?actor=jakub.kopecky/actor-inspector-agent)](https://apify.com/jakub.kopecky/actor-inspector-agent)
-[![GitHub Repo stars](https://img.shields.io/github/stars/apify/agent-actor-inspector)](https://github.com/apify/agent-actor-inspector/stargazers)
+[![GitHub Repo stars](https://img.shields.io/github/stars/apify/actor-inspector-agent)](https://github.com/apify/actor-inspector-agent/stargazers)
 
 The **Actor Inspector Agent** is designed to evaluate and analyze other Apify Actors.
 It provides detailed reports on code quality, documentation, uniqueness, and pricing competitiveness, helping developers optimize their Actors and users choose the best tools for their needs.
