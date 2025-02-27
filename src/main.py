@@ -1,11 +1,4 @@
-"""This module defines the main entry point for the Apify Actor.
-
-Feel free to modify this file to suit your specific needs.
-
-To build Apify Actors, utilize the Apify SDK toolkit, read more at the official
-documentation:
-https://docs.apify.com/sdk/python
-"""
+"""Main file of the Actor Inspector Agent for Apify Actors"""
 
 from __future__ import annotations
 
@@ -36,7 +29,6 @@ async def main() -> None:
         ValueError: If the input is missing required attributes.
     """
     async with Actor:
-        # Handle input
         actor_input = await Actor.get_input() or {}
 
         actor_name = actor_input.get('actorName')
@@ -207,7 +199,7 @@ async def main() -> None:
                 '- The Overall section provides a final rating and a 2-3 '
                 'sentence summary.'
             ),
-            context=[code_quality_task, actor_quality_task, uniqueness_task, pricing_task],
+            context=[actor_quality_task, code_quality_task, pricing_task, uniqueness_task],
             agent=inspector_agent,
         )
 
@@ -215,10 +207,10 @@ async def main() -> None:
         # For more information, see https://docs.crewai.com/concepts/crews
         crew = Crew(
             agents=[
-                code_quality_agent,
                 actor_quality_agent,
-                uniqueness_check_agent,
+                code_quality_agent,
                 pricing_check_agent,
+                uniqueness_check_agent,
             ],
             tasks=[final_task],
             manager_agent=inspector_agent,
