@@ -119,3 +119,9 @@ Dataset output:
 ## 🚀 Get Started
 
 Evaluate your favorite Apify Actors today and unlock insights to build or choose better tools! 🤖🔍
+
+---
+
+🌐 Open source
+
+This Actor is open source, hosted on [GitHub](https://github.com/apify/agent-actor-inspector).
