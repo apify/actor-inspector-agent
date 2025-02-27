@@ -174,7 +174,7 @@ Evaluate your favorite Apify Actors today and unlock insights to build or choose
 
 ---
 
-🌐 Open source
+## 🌐 Open source
 
 This Actor is open source, hosted on [GitHub](https://github.com/apify/agent-actor-inspector).
 
