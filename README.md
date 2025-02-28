@@ -6,7 +6,7 @@
 The **Actor Inspector Agent** is designed to evaluate and analyze other Apify Actors.
 It provides detailed reports on code quality, documentation, uniqueness, and pricing competitiveness, helping developers optimize their Actors and users choose the best tools for their needs.
 
-This Agent is built using [CrewAI](https://docs.crewai.com/) and [Apify SDK](https://docs.apify.com/sdk/python) and is using modern and flexble pricing model for AI Agents [Pay Per Event](https://docs.apify.com/sdk/js/docs/next/guides/pay-per-event).
+This Agent is built using [CrewAI](https://docs.crewai.com/) and [Apify SDK](https://docs.apify.com/sdk/python) and is using modern and flexible pricing model for AI Agents [Pay Per Event](https://docs.apify.com/sdk/js/docs/next/guides/pay-per-event).
 
 ## 🎯 Features
 
@@ -97,12 +97,12 @@ Dataset output:
 - **Automation**: Streamlines Actor evaluation with AI-driven analysis.
 - **Scalability**: Analyze multiple Actors by running the Inspector in parallel.
 
-## 🔧 Technical Highlights
+## 🔧 Technical highlights
 
 - **Built with Apify SDK**: Ensures seamless integration with the Apify platform.
 - **CrewAI powered**: Uses multi-agent workflows for thorough, modular analysis.
 - **GitHub integration**: Pulls source code from GitHub when available for deeper code quality checks.
-- **Flexible tools**: Custom tools fetch READMEs, input schemas, pricing info, and related Actors.
+- **Flexible tools**: Tools to fetch README, input schemas, pricing information, and related Actors.
 
 ## 🤖 Under the hood with [CrewAI](https://docs.crewai.com/)
 
@@ -158,7 +158,7 @@ Each agent has access to specialized tools that:
 The CrewAI framework ensures collaboration between agents while maintaining focus on their specific areas of expertise.
 
 
-## 📖 Learn More
+## 📖 Learn more
 
 - [Apify Platform](https://apify.com)
 - [Apify SDK Documentation](https://docs.apify.com/sdk/python)
@@ -166,13 +166,9 @@ The CrewAI framework ensures collaboration between agents while maintaining focu
 - [What are AI Agents?](https://blog.apify.com/what-are-ai-agents/)
 - [AI agent architecture](https://blog.apify.com/ai-agent-architecture)
 
----
-
-## 🚀 Get Started
+## 🚀 Get started
 
 Evaluate your favorite Apify Actors today and unlock insights to build or choose better tools! 🤖🔍
-
----
 
 ## 🌐 Open source
 
