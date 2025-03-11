@@ -1,7 +1,7 @@
 {
 	"actorSpecification": 1,
-	"name": "agent-actor-inspector",
-	"title": "Agent Actor Inspector",
+	"name": "actor-inspector-agent",
+	"title": "Actor Inspector Agent",
 	"description": "Actor Inspector Agent is an Apify Actor designed to evaluate and rate other Apify Actors based on criteria such as documentation quality, input clarity, code standards, functionality, performance, and uniqueness.",
 	"version": "0.1",
 	"buildTag": "latest",
