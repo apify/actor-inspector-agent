@@ -165,6 +165,7 @@ The CrewAI framework ensures collaboration between agents while maintaining focu
 - [CrewAI Documentation](https://docs.crewai.com)
 - [What are AI Agents?](https://blog.apify.com/what-are-ai-agents/)
 - [AI agent architecture](https://blog.apify.com/ai-agent-architecture)
+- [How to build an AI agent on Apify](https://blog.apify.com/how-to-build-an-ai-agent/)
 
 ## 🚀 Get started
 
