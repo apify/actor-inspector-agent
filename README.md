@@ -12,9 +12,11 @@ This Agent is built using [CrewAI](https://docs.crewai.com/) and [Apify SDK](htt
 
 - 🧪 **Code quality**: Evaluates tests, linting, security, performance, and code style
 - 📚 **Documentation**: Reviews readme clarity, input schema, examples, and GitHub presence
-- 💫 **Uniqueness**: Compares features with similar actors to assess distinctiveness
+- 💫 **Uniqueness**: Compares features with similar Actors to assess distinctiveness
 - 💰 **Pricing**: Analyzes price competitiveness and model transparency
-- 🚧 **Actor run** _(Coming soon)_: Tests actor execution and generates performance report
+- 🚧 **Actor run** _(Coming soon)_: Tests Actor execution and generates performance report
+
+![Agent Actor Inspector workflow](docs/agent_actor_inspector.png)
 
 ## 🔄 How it works?
 
@@ -63,15 +65,15 @@ A sample report might look like this (stored in the dataset):
 
 - **Code quality:**
   - Rating: Unknown (Based on best practices).
-  - Description: While direct analysis was unavailable, the actor is expected to follow best practices, ensuring organized, efficient, and secure code.
+  - Description: While direct analysis was unavailable, the Actor is expected to follow best practices, ensuring organized, efficient, and secure code.
 
 - **Actor quality:**
   - Rating: Great
-  - Description: The actor exhibits excellent documentation, with comprehensive guidance, use case examples, detailed input properties, and a user-friendly design that aligns with best practices.
+  - Description: The Actor exhibits excellent documentation, with comprehensive guidance, use case examples, detailed input properties, and a user-friendly design that aligns with best practices.
 
 - **Actor uniqueness:**
   - Rating: Good
-  - Description: Although there are similar actors, its unique design for LLM integration and enhanced HTML processing options provide it with a distinct niche.
+  - Description: Although there are similar Actors, its unique design for LLM integration and enhanced HTML processing options provide it with a distinct niche.
 
 - **Pricing:**
   - Rating: Good
@@ -79,7 +81,7 @@ A sample report might look like this (stored in the dataset):
 
 **Overall Final Mark: Great**
 
-The "apify/website-content-crawler" stands out with its combination of quality documentation, unique features tailored for modern AI applications, and competitive pricing strategy, earning it a "Great" overall assessment. While information on code quality couldn't be directly assessed, the actor's thought-out documentation and broad feature set suggest adherence to high standards.
+The "apify/website-content-crawler" stands out with its combination of quality documentation, unique features tailored for modern AI applications, and competitive pricing strategy, earning it a "Great" overall assessment. While information on code quality couldn't be directly assessed, the Actor's thought-out documentation and broad feature set suggest adherence to high standards.
 ```
 
 Dataset output:
@@ -150,9 +152,9 @@ This Actor uses CrewAI to orchestrate a team of specialized AI agents that work 
 #### 🛠️ Tools
 
 Each agent has access to specialized tools that:
-- Fetch actor source code and analyze its structure
+- Fetch Actor source code and analyze its structure
 - Retrieve documentation and readme content
-- Get pricing information and find similar actors
+- Get pricing information and find similar Actors
 - Process and structure the gathered data
 
 The CrewAI framework ensures collaboration between agents while maintaining focus on their specific areas of expertise.

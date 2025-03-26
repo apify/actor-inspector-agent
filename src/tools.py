@@ -63,7 +63,7 @@ class GetActorReadmeTool(BaseTool):
         Returns:
             A string containing the README content.
         """
-        logger.info('Getting README for actor %s', actor_name)
+        logger.info('Getting README for Actor %s', actor_name)
         build = get_actor_latest_build(actor_name)
         readme = build.get('actorDefinition', {}).get('readme')
         if not readme:
@@ -182,7 +182,7 @@ class GetActorCodeTool(BaseTool):
             CodeContext: Structured code context of the specified Actor.
             str: An error message if code context cannot be retrieved at all.
         """
-        logger.info('Get code context for actor %s, max_tokens=%s', actor_name, max_tokens)
+        logger.info('Get code context for Actor %s, max_tokens=%s', actor_name, max_tokens)
         # Try to get the source files
         if source_files := get_actor_source_files(actor_name):
             return self._get_code_from_source(source_files)
@@ -223,7 +223,7 @@ class SearchRelatedActorsTool(BaseTool):
     def _run(self, search: str, limit: int = 10, offset: int = 0) -> ActorStoreList | None:
         """Execute the tool's logic to search related actors by keyword."""
         try:
-            logger.info('Search related actors with key words: %s', search)
+            logger.info('Search related Actors with key words: %s', search)
             apify_client = ApifyClient(token=get_apify_token())
             search_results = apify_client.store().list(limit=limit, offset=offset, search=search).items
             logger.info('Found %s Actors related with key words: %s', len(search_results), search)

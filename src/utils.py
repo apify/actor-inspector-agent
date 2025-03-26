@@ -29,18 +29,18 @@ def get_apify_token() -> str:
 
 def get_actor_id(actor_name: str) -> str:
     """
-    Retrieve the actor ID for a given actor name.
+    Retrieve the Actor ID for a given Actor name.
 
     Args:
-        actor_name (str): The name of the actor.
+        actor_name (str): The name of the Actor.
 
     Returns:
-        str: The ID of the actor.
+        str: The ID of the Actor.
 
     Raises:
-        ValueError: If the actor is not found or the actor ID cannot be retrieved.
+        ValueError: If the Actor is not found or the Actor ID cannot be retrieved.
     """
-    logger.debug('Get actor ID for actor %s', actor_name)
+    logger.debug('Get Actor ID for Actor %s', actor_name)
     apify_client = ApifyClient(token=get_apify_token())
     if not (actor := apify_client.actor(actor_name).get()):
         raise ValueError(f'Actor {actor_name} not found.')
@@ -88,18 +88,18 @@ def generate_file_tree(files: list[dict]) -> dict:
 
 def get_actor_github_urls(actor_name: str) -> list[str]:
     """
-    Retrieve the GitHub repository URLs associated with an actor.
+    Retrieve the GitHub repository URLs associated with an Actor.
 
     Args:
-        actor_name (str): The name of the actor.
+        actor_name (str): The name of the Actor.
 
     Returns:
-        list[str]: A list of GitHub repository URLs associated with the actor.
+        list[str]: A list of GitHub repository URLs associated with the Actor.
 
     Raises:
-        ValueError: If the actor is not found or the actor ID cannot be retrieved.
+        ValueError: If the Actor is not found or the Actor ID cannot be retrieved.
     """
-    logger.debug('Get GitHub URLs for actor %s', actor_name)
+    logger.debug('Get GitHub URLs for Actor %s', actor_name)
     apify_client = ApifyClient(token=get_apify_token())
     actor_id = get_actor_id(actor_name)
     github_urls = []
@@ -129,15 +129,15 @@ def github_repo_exists(repository_url: str) -> bool:
 
 def get_actor_source_files(actor_name: str) -> list[dict]:
     """
-    Retrieve the source files for the latest version of an actor from the default build tag.
+    Retrieve the source files for the latest version of an Actor from the default build tag.
 
     Args:
-        actor_name (str): The name of the actor.
+        actor_name (str): The name of the Actor.
 
     Returns:
-        list[dict]: A list of dictionaries representing the source files of the actor.
+        list[dict]: A list of dictionaries representing the source files of the Actor.
     """
-    logger.debug('Get source files for actor %s', actor_name)
+    logger.debug('Get source files for Actor %s', actor_name)
     apify_client = ApifyClient(token=get_apify_token())
     actor_id = get_actor_id(actor_name)
     versions = apify_client.actor(actor_id).versions().list().items
